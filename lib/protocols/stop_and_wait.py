@@ -1,34 +1,7 @@
 import socket
 from utils.file_manager import FileManager
 from utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
-import struct
-
-
-class Packet:
-    # Clase packet provisional para testear funcionamiento localmente
-    def __init__(self, data=b"", seq_num=0, ack=0):
-        self.seq_num = seq_num  # 0 o 1
-        self.data = data  # bytes
-        self.ack = ack  # 0 o 1
-
-    def serialize(self):
-        data_length = len(self.data)
-        header = struct.pack(
-            "!B B I", self.seq_num, self.ack, data_length
-        )  # !B B I: 1 byte para seq, 1 byte para ack, 4 bytes para longitud
-        return header + self.data  # Empaquetamos el header y los datos binarios (data)
-
-    @staticmethod
-    def deserialize(bytes_data):
-        # Desempaquetamos el header
-        header = bytes_data[:6]  # Los primeros 6 bytes contienen el header
-        seq_num, ack, data_length = struct.unpack("!B B I", header)
-
-        # El resto es el data, basado en la longitud que hemos desempaquetado
-        data = bytes_data[6 : 6 + data_length]
-
-        return Packet(data, seq_num, ack)
-
+from utils.packets import StopAndWaitPacket
 
 # Custom exceptions for the Stop and Wait protocol
 # TODO: Ubicarlas en su lugar
@@ -50,10 +23,9 @@ class StopAndWait:
         self.socket = socket
         self.send_attempts = 0
 
-    def send(self, data):  # Send a single package
+    def send(self, payload):  # Send a single package
 
-        packet = Packet(data=data, seq_num=self.seq)
-
+        packet = StopAndWaitPacket(payload=payload, seq_num=self.seq)
         serialized_packet = packet.serialize()
 
         while MAX_ATTEMPTS > self.send_attempts:
@@ -67,9 +39,9 @@ class StopAndWait:
                 ack_packet, _ = self.socket.recvfrom(
                     BUFFER_SIZE
                 )
-                ack_packet = Packet.deserialize(ack_packet)
+                ack_packet = StopAndWaitPacket.deserialize(ack_packet)
 
-                if ack_packet.ack == self.seq:
+                if ack_packet.ack_num == self.seq:
                     # Package received successfully
                     self.seq = 1 - self.seq
                     self.send_attempts = 0
@@ -93,24 +65,23 @@ class StopAndWait:
 
     def receive(self):  # Receive a single package
         serialized_packet, address = self.socket.recvfrom(BUFFER_SIZE)
-        packet = Packet.deserialize(serialized_packet)
+        packet = StopAndWaitPacket.deserialize(serialized_packet)
 
         if packet.seq_num == self.ack:
             # Expected packet
             # Send ACK
-            ack_packet = Packet(ack=self.ack)
+            ack_packet = StopAndWaitPacket(ack_num=self.ack)
             serialized_ack = ack_packet.serialize()
             self.socket.sendto(serialized_ack, address)
-
             self.ack = 1 - self.ack
 
-            return packet.data
+            return packet.payload
         else:
             # Duplicate or out-of-order packet
             print(f"[SERVER] Duplicate or corrupt package: {packet}")
 
             # send the last ACK I received
-            ack_packet = Packet(ack=1 - self.ack)
+            ack_packet = StopAndWaitPacket(ack_num = 1 - self.ack)
             serialized_ack = ack_packet.serialize()
             self.socket.sendto(serialized_ack, address)
 

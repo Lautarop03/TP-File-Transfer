@@ -1,4 +1,4 @@
-from constants import BUFFER_SIZE
+from constants import DATA_SIZE
 import os
 
 
@@ -18,7 +18,7 @@ class FileManager:
     def read(self):
         if self.file and "rb" in self.mode:
             try:
-                return self.file.read(BUFFER_SIZE)
+                return self.file.read(DATA_SIZE)
             except Exception as e:
                 print(f"Error al leer el archivo: {e}")
         else:
