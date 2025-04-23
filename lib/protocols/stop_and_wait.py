@@ -110,7 +110,7 @@ class StopAndWait:
             print(f"[SERVER] Duplicate or corrupt package: {packet}")
 
             # send the last ACK I received
-            ack_packet = Packet(ack=self.ack)
+            ack_packet = Packet(ack=1 - self.ack)
             serialized_ack = ack_packet.serialize()
             self.socket.sendto(serialized_ack, address)
 
