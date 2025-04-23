@@ -3,6 +3,7 @@ from utils.file_manager import FileManager
 from utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
 from utils.packets import StopAndWaitPacket
 
+
 # Custom exceptions for the Stop and Wait protocol
 # TODO: Ubicarlas en su lugar
 class MaxSendAttemptsExceeded(Exception):
@@ -24,37 +25,32 @@ class StopAndWait:
         self.send_attempts = 0
 
     def send(self, payload):  # Send a single package
-
         packet = StopAndWaitPacket(payload=payload, seq_num=self.seq)
         serialized_packet = packet.serialize()
 
         while MAX_ATTEMPTS > self.send_attempts:
-
             self.socket.sendto(serialized_packet, (self.ip, self.port))
 
             # Wait for ACK
             # Set the timeout for receiving the ACK
             self.socket.settimeout(TIMEOUT)
             try:
-                ack_packet, _ = self.socket.recvfrom(
-                    BUFFER_SIZE
-                )
+                ack_packet, _ = self.socket.recvfrom(BUFFER_SIZE)
                 ack_packet = StopAndWaitPacket.deserialize(ack_packet)
 
                 if ack_packet.ack_num == self.seq:
                     # Package received successfully
                     self.seq = 1 - self.seq
                     self.send_attempts = 0
-                    return  
+                    return
                 else:
                     # The ACK is not what I expect
-                    print(f"[CLIENT] Duplicate or corrupt package: {ack_packet}") # Debug
-                    
+                    print(
+                        f"[CLIENT] Duplicate or corrupt package: {ack_packet}"
+                    )  # Debug
 
             except socket.timeout:
-                print(
-                    f"[CLIENT] Timeout waiting for ACK"
-                ) # Debug
+                print(f"[CLIENT] Timeout waiting for ACK")  # Debug
 
             self.send_attempts += 1
 
@@ -81,7 +77,7 @@ class StopAndWait:
             print(f"[SERVER] Duplicate or corrupt package: {packet}")
 
             # send the last ACK I received
-            ack_packet = StopAndWaitPacket(ack_num = 1 - self.ack)
+            ack_packet = StopAndWaitPacket(ack_num=1 - self.ack)
             serialized_ack = ack_packet.serialize()
             self.socket.sendto(serialized_ack, address)
 
