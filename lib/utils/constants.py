@@ -12,3 +12,7 @@ WRITE_MODE = "wb"  # Modo de escritura para archivos binarios
 READ_MODE = "rb"  # Modo de lectura para archivos binarios
 
 MAX_ATTEMPTS = 10  # Maximo de intentos de envio
+
+# Operation types
+DOWNLOAD_OPERATION = 1
+UPLOAD_OPERATION = 2

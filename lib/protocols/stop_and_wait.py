@@ -1,11 +1,13 @@
+from utils.packets import StopAndWaitPacket
 import socket
 from utils.file_manager import FileManager
-from utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
-from utils.packets import StopAndWaitPacket
-
-
+from utils.constants import (TIMEOUT, BUFFER_SIZE,
+                             WRITE_MODE, READ_MODE, MAX_ATTEMPTS
+                             )
 # Custom exceptions for the Stop and Wait protocol
 # TODO: Ubicarlas en su lugar
+
+
 class MaxSendAttemptsExceeded(Exception):
     pass
 
@@ -50,13 +52,14 @@ class StopAndWait:
                     )  # Debug
 
             except socket.timeout:
-                print(f"[CLIENT] Timeout waiting for ACK")  # Debug
+                print("[CLIENT] Timeout waiting for ACK")  # Debug
 
             self.send_attempts += 1
 
         # exited the while, the packet could not be sent -> the program closes
         raise MaxSendAttemptsExceeded(
-            f"The packet with seq {self.seq} could not be sent after {MAX_ATTEMPTS} attempts."
+            f"The packet with seq {self.seq} could not be sent"
+            f" after {MAX_ATTEMPTS} attempts."
         )
 
     def receive(self):  # Receive a single package

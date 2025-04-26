@@ -1,30 +1,75 @@
-def add_arguments(parser):
-    verbosity = parser.add_mutually_exclusive_group()
-    verbosity.add_argument(
-        "-v", "--verbose", action="store_true",
-        default=False, help="increase output verbosity",
-    )
-    verbosity.add_argument(
-        "-q", "--quiet", action="store_true",
-        default=True, help="decrease output verbosity",
-    )
+import socket
+import sys
+import threading
+from typing import Dict, Tuple
+# from protocols.stop_and_wait import StopAndWait
+# TODO: Import when implemented
+# from protocols.selective_repeat import SelectiveRepeat
+from utils.init_message_parser import InitMessageParser
+from utils.connection_info import ConnectionInfo
 
-    parser.add_argument(
-        "-H", "--host", type=str, default="0.0.0.0",
-        metavar="", help="service IP address",
-    )
-    parser.add_argument(
-        "-p", "--port", type=int, default=5000,
-        etavar="", help="service port"
-    )
-    parser.add_argument(
-        "-s", "--storage", type=str, default="/", required=False,
-        metavar="", help="storage dir path",
-    )
-    parser.add_argument(
-        "-r", "--protocol", type=str, choices=["sw", "sr"],
-        default="sw", metavar="", help="error recovery protocol",
-    )
+
+def handle_client_connection(client_address: Tuple[str, int],
+                             conn_info: ConnectionInfo):
+    """Handle the file transfer for a client in a separate thread"""
+    try:
+        if conn_info.is_download:
+            conn_info.protocol_handler.send_file(conn_info.file_path)
+        else:
+            conn_info.protocol_handler.receive_file(conn_info.file_path)
+    except Exception as e:
+        print(
+            f"Error on {'download' if conn_info.is_download else 'upload'}"
+            f"for {client_address}: {e}")
+
+
+def process_message(data: bytes, client_address: Tuple[str, int],
+                    server_socket: socket.socket,
+                    client_connections: Dict[Tuple[str, int], ConnectionInfo],
+                    args):
+    """Handle received message in a separate thread"""
+    try:
+        if args.verbose:
+            print(f"\nProcessing data from {client_address}")
+            print(f"Data length: {len(data)} bytes")
+
+        # Check if this is a new client (INIT message)
+        with client_connections_lock:
+            if client_address not in client_connections:
+                success, result = InitMessageParser.parse(
+                    data, server_socket, client_address, args.verbose)
+                if not success:
+                    error_msg = f"Invalid INIT message: {result}"
+                    if args.verbose:
+                        print(error_msg)
+                    server_socket.sendto(
+                        f"ERROR: {error_msg}".encode(), client_address)
+                    return
+
+                client_connections[client_address] = result
+                # Send acknowledgment for successful INIT
+                server_socket.sendto(b"INIT_ACK", client_address)
+
+                # Start a new thread to handle the file transfer
+                transfer_thread = threading.Thread(
+                    target=handle_client_connection,
+                    args=(client_address, result)
+                )
+                transfer_thread.daemon = True
+                transfer_thread.start()
+                return
+
+            # If not an INIT message, let the protocol handler handle it
+            conn_info = client_connections[client_address]
+            if conn_info.protocol == "sw":
+                conn_info.protocol_handler.receive()
+
+    except Exception as e:
+        if args.verbose:
+            print(f"Error processing message from {client_address}: {e}")
+        server_socket.sendto(
+            "ERROR: Internal server error".encode(),
+            client_address)
 
 
 def run(args):
@@ -36,3 +81,38 @@ def run(args):
         print(f"Port         : {args.port}")
         print(f"Storage Path : {args.storage}")
         print(f"Protocol     : {args.protocol}")
+
+    # Create UDP socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Dictionary to store client connections
+    client_connections: Dict[Tuple[str, int], ConnectionInfo] = {}
+    global client_connections_lock
+    client_connections_lock = threading.Lock()
+
+    try:
+        # Bind socket to address
+        server_socket.bind((args.host, args.port))
+        if args.verbose:
+            print(f"\nServer started. Listening on {args.host}:{args.port}")
+
+        while True:
+            # Receive data
+            data, client_address = server_socket.recvfrom(1024)
+
+            # Create and start a new thread for message processing
+            thread = threading.Thread(
+                target=process_message,
+                args=(data, client_address, server_socket,
+                      client_connections, args)
+            )
+            thread.daemon = True
+            thread.start()
+
+    except Exception as e:
+        if not args.quiet:
+            print(f"Server error: {e}", file=sys.stderr)
+        raise e
+
+    finally:
+        server_socket.close()
