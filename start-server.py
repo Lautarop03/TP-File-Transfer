@@ -5,8 +5,8 @@ from lib.server import start_server
 def main():
     parser = argparse.ArgumentParser(
         prog='start-server',
-        usage='start-server [-h] [-v | -q] [-H ADDR] '
-                '[-p PORT] [-s DIRPATH] [-r protocol]',
+        usage='start-server [-h] [-v | -q] [-H ADDR] [-p PORT] [-s DIRPATH]'
+        ' [-r protocol]',
         description='Start the UDP file transfer server',
         formatter_class=argparse.RawTextHelpFormatter
     )
