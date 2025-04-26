@@ -16,7 +16,8 @@ class StopAndWaitPacket:
     def serialize(self):
         header_byte = self._build_header()
 
-        # Empaquetamos todo: 1 byte de encabezado + longitud del payload + datos del payload
+        # Empaquetamos todo: 1 byte de encabezado + longitud del
+        # payload + datos del payload
         packet_wo_crc = (
             struct.pack("!B", header_byte)
             + struct.pack("!H", len(self.payload))
@@ -38,9 +39,9 @@ class StopAndWaitPacket:
 
         payload_len = struct.unpack("!H", data[1:3])[0]
 
-        payload = data[3 : 3 + payload_len]
+        payload = data[3: 3 + payload_len]
 
-        crc_received = struct.unpack("!I", data[3 + payload_len :])[0]
+        crc_received = struct.unpack("!I", data[3 + payload_len:])[0]
 
         # Verificar el CRC
         crc_calculated = zlib.crc32(data[:-4]) & 0xFFFFFFFF

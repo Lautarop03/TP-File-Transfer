@@ -16,16 +16,20 @@ def add_arguments(parser):
     )
 
     parser.add_argument(
-        "-H", "--host", type=str, required=False, metavar="", help="server IP address"
+        "-H", "--host", type=str, required=False,
+        metavar="", help="server IP address"
     )  # TODO: Required? -> Preguntar
     parser.add_argument(
-        "-p", "--port", type=int, default=5000, metavar="", help="server port"
+        "-p", "--port", type=int, default=5000,
+        metavar="", help="server port"
     )
     parser.add_argument(
-        "-s", "--src", type=str, required=False, metavar="", help="source file path"
+        "-s", "--src", type=str, required=False,
+        metavar="", help="source file path"
     )
     parser.add_argument(
-        "-n", "--name", type=str, required=False, metavar="", help="file name"
+        "-n", "--name", type=str, required=False,
+        metavar="", help="file name"
     )
     parser.add_argument(
         "-r",

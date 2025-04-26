@@ -7,7 +7,8 @@ def main():
         prog='start-server',
         usage='start-server [-h] [-v | -q] [-H ADDR] [-p PORT] [-s DIRPATH]'
         ' [-r protocol]',
-        description='Start the UDP file transfer server',
+        description='Start the UDP file transfer server, will listen'
+        ' on ADDR:PORT',
         formatter_class=argparse.RawTextHelpFormatter
     )
     start_server.add_arguments(parser)
