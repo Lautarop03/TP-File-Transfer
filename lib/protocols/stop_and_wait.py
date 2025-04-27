@@ -1,8 +1,8 @@
 import socket
-from utils.file_manager import FileManager
-from utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
-from utils.packets import StopAndWaitPacket
-from exceptions import MaxSendAttemptsExceeded, PacketDuplicateOrCorrupted
+from lib.utils.file_manager import FileManager
+from lib.utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
+from lib.utils.packets import StopAndWaitPacket
+from lib.exceptions import MaxSendAttemptsExceeded, PacketDuplicateOrCorrupted
 
 class StopAndWait:
     def __init__(self, socket, ip, port):

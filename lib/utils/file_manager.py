@@ -1,4 +1,4 @@
-from constants import DATA_SIZE
+from lib.utils.constants import DATA_SIZE
 import os
 
 
