@@ -1,4 +1,4 @@
-from constants import DATA_SIZE
+from lib.utils.constants import DATA_SIZE
 import os
 
 
@@ -12,7 +12,7 @@ class FileManager:
         try:
             self.file = open(self.path, self.mode)
         except OSError as e:
-            print(f"Error al abrir el archivo: {e}")
+            print(f"Error opening file: {e}")
             self.file = None
 
     def read(self):
@@ -20,9 +20,9 @@ class FileManager:
             try:
                 return self.file.read(DATA_SIZE)
             except Exception as e:
-                print(f"Error al leer el archivo: {e}")
+                print(f"Error reading file: {e}")
         else:
-            print("Archivo no abierto en modo lectura binaria.")
+            print("File not opened in binary read mode.")
         return None
 
     def write(self, data):
@@ -30,16 +30,16 @@ class FileManager:
             try:
                 self.file.write(data)
             except Exception as e:
-                print(f"Error al escribir en el archivo: {e}")
+                print(f"Error writing to file: {e}")
         else:
-            print("Archivo no abierto en modo escritura binaria.")
+            print("File not opened in binary write mode.")
 
     def close(self):
         if self.file:
             try:
                 self.file.close()
             except Exception as e:
-                print(f"Error al cerrar el archivo: {e}")
+                print(f"Error closing file: {e}")
             finally:
                 self.file = None
 
@@ -48,5 +48,5 @@ class FileManager:
             try:
                 return os.path.getsize(self.path)
             except Exception as e:
-                print(f"Error al obtener el tamaño del archivo: {e}")
+                print(f"Error getting file size: {e}")
         return None
