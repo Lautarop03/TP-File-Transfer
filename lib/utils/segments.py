@@ -50,7 +50,6 @@ class StopAndWaitSegment:
         seq_num = (header_byte >> 2) & 0b1
         ack_num = (header_byte >> 1) & 0b1
         eof_num = header_byte & 0b1
-        print(f"seq_num: {seq_num}, ack_num: {ack_num}, eof_num: {eof_num}")
         return StopAndWaitSegment(payload, seq_num, ack_num, eof_num)
 
 class InitSegment:
