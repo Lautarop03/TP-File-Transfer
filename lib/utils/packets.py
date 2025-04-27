@@ -106,3 +106,48 @@ class InitSegment:
         protocol = header_byte & 0b1
 
         return InitSegment(opcode, protocol, file_name, file_path)
+    
+class SelectiveRepeatSegment:
+    def __init__(self, payload=b"", seq_num=0, ack_num=0, win_size=0):
+        self.payload = payload
+        self.seq_num = seq_num & 0xFFFF  # 2 Bytes
+        self.ack_num = ack_num & 0xFFFF # 2 Bytes
+        self.win_size = win_size & 0xFFFF # 2 Bytes
+    
+    def serialize(self):
+        payload_len_bytes = len(self.payload).to_bytes(2, byteorder="big")
+
+        seq_num_bytes = self.seq_num.to_bytes(2, byteorder="big")
+        ack_num_bytes = self.ack_num.to_bytes(2, byteorder="big")
+        win_size_bytes = self.win_size.to_bytes(2, byteorder="big")
+
+        packet_to_crc = seq_num_bytes + ack_num_bytes + win_size_bytes + payload_len_bytes + self.payload
+
+        # Calculate CRC32
+        crc = zlib.crc32(packet_to_crc) & 0xFFFFFFFF
+        crc_bytes = crc.to_bytes(4, byteorder="big")
+        return packet_to_crc + crc_bytes
+    
+    @staticmethod
+    def deserialize(data):
+        if len(data) < 12:
+            raise ValueError("Packet too short")
+
+        # Extract the header
+        seq_num = int.from_bytes(data[0:2], byteorder="big")
+        ack_num = int.from_bytes(data[2:4], byteorder="big")
+        win_size = int.from_bytes(data[4:6], byteorder="big")
+        payload_len = int.from_bytes(data[6:8], byteorder="big")
+
+        if len(data) < (8 + payload_len + 4):
+            raise ValueError("Incomplete packet")
+
+        payload = data[8:8 + payload_len]
+        crc_received = int.from_bytes(data[8 + payload_len:], byteorder="big")
+
+        # Check the CRC32
+        crc_calculated = zlib.crc32(data[:8 + payload_len]) & 0xFFFFFFFF
+        if crc_calculated != crc_received:
+            raise ValueError("CRC mismatch")
+
+        return SelectiveRepeatSegment(payload, seq_num, ack_num, win_size)
