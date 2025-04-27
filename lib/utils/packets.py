@@ -1,7 +1,7 @@
 import zlib
 
 
-class StopAndWaitPacket:
+class StopAndWaitSegment:
     def __init__(self, payload=b"", seq_num=0, ack_num=0):
         self.payload = payload
         self.seq_num = seq_num & 0b1  # 1 bit
@@ -49,4 +49,4 @@ class StopAndWaitPacket:
         seq_num = (header_byte >> 1) & 0b1
         ack_num = header_byte & 0b1
 
-        return StopAndWaitPacket(payload, seq_num, ack_num)
+        return StopAndWaitSegment(payload, seq_num, ack_num)
