@@ -1,7 +1,7 @@
 import socket
 from lib.utils.file_manager import FileManager
 from lib.utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
-from lib.utils.packets import StopAndWaitSegment
+from lib.utils.segments import StopAndWaitSegment
 from lib.exceptions import MaxSendAttemptsExceeded, PacketDuplicateOrCorrupted
 
 class StopAndWait:
