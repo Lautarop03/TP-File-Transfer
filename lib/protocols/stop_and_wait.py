@@ -2,17 +2,7 @@ import socket
 from utils.file_manager import FileManager
 from utils.constants import TIMEOUT, BUFFER_SIZE, WRITE_MODE, READ_MODE, MAX_ATTEMPTS
 from utils.packets import StopAndWaitPacket
-
-
-# Custom exceptions for the Stop and Wait protocol
-# TODO: Ubicarlas en su lugar
-class MaxSendAttemptsExceeded(Exception):
-    pass
-
-
-class PacketDuplicateOrCorrupted(Exception):
-    pass
-
+from exceptions import MaxSendAttemptsExceeded, PacketDuplicateOrCorrupted
 
 class StopAndWait:
     def __init__(self, socket, ip, port):
@@ -113,7 +103,7 @@ class StopAndWait:
                     print("[SERVER] End of file received.")  # Debug
                     break
 
-                # Escribir al archivo
+                # Write the file
                 file_manager.write(data)
             except PacketDuplicateOrCorrupted:
                 continue
