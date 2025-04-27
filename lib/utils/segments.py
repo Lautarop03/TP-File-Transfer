@@ -2,14 +2,15 @@ import zlib
 
 
 class StopAndWaitSegment:
-    def __init__(self, payload=b"", seq_num=0, ack_num=0):
+    def __init__(self, payload=b"", seq_num=0, ack_num=0, eof_num=0):
         self.payload = payload
         self.seq_num = seq_num & 0b1  # 1 bit
         self.ack_num = ack_num & 0b1  # 1 bit
+        self.eof_num = eof_num & 0b1  # 1 bit
 
     def _build_header(self):
-        # 6 bits padding (000000), 1 bit seq_num, 1 bit ack_num
-        return (self.seq_num << 1) | self.ack_num
+        # 5 bits padding (00000), 1 bit seq_num, 1 bit ack_num, 1 bit eof
+        return (self.seq_num << 2) | (self.ack_num << 1) | self.eof_num
 
     def serialize(self):
         header_byte = self._build_header()
@@ -46,10 +47,11 @@ class StopAndWaitSegment:
             raise ValueError("CRC mismatch")
 
         # Extract the header values
-        seq_num = (header_byte >> 1) & 0b1
-        ack_num = header_byte & 0b1
-
-        return StopAndWaitSegment(payload, seq_num, ack_num)
+        seq_num = (header_byte >> 2) & 0b1
+        ack_num = (header_byte >> 1) & 0b1
+        eof_num = header_byte & 0b1
+        print(f"seq_num: {seq_num}, ack_num: {ack_num}, eof_num: {eof_num}")
+        return StopAndWaitSegment(payload, seq_num, ack_num, eof_num)
 
 class InitSegment:
     def __init__(self, opcode=0, protocol=0, file_name=b"", file_path=b""):

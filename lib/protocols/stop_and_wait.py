@@ -14,8 +14,8 @@ class StopAndWait:
         self.socket = socket
         self.send_attempts = 0
 
-    def send(self, payload):  # Send a single package
-        packet = StopAndWaitSegment(payload=payload, seq_num=self.seq)
+    def send(self, payload, eof=0):  # Send a single package
+        packet = StopAndWaitSegment(payload=payload, seq_num=self.seq, eof_num=eof)
         serialized_packet = packet.serialize()
 
         while MAX_ATTEMPTS > self.send_attempts:
@@ -61,7 +61,7 @@ class StopAndWait:
             self.socket.sendto(serialized_ack, address)
             self.ack = 1 - self.ack
 
-            return packet.payload
+            return packet
         else:
             # Duplicate or out-of-order packet
             print(f"[SERVER] Duplicate or corrupt package: {packet}")
@@ -87,8 +87,8 @@ class StopAndWait:
 
         file_manager.close()
 
-        # TODO: Cambiar como se manda el EOF, cuando esten los MSG
-        self.send(b"EOF")
+        self.send(b"", eof=1)  # Send EOF
+
 
     def receive_file(self, path):
         file_manager = FileManager(path, WRITE_MODE)
@@ -98,13 +98,12 @@ class StopAndWait:
             try:
                 data = self.receive()
 
-                # TODO: Cambiar como se recibe el EOF, cuando esten los MSG
-                if data == b"EOF":
-                    print("[SERVER] End of file received.")  # Debug
+                if data.eof_num == 1:
+                    print("[SERVER] EOF received.")
                     break
 
                 # Write the file
-                file_manager.write(data)
+                file_manager.write(data.payload)
             except PacketDuplicateOrCorrupted:
                 continue
             except Exception as e:
