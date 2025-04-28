@@ -2,8 +2,8 @@ import os
 import socket
 from typing import Tuple
 import zlib
-from connection_info import ConnectionInfo
-from protocols.stop_and_wait import StopAndWait
+from .connection_info import ConnectionInfo
+from ..protocols.stop_and_wait import StopAndWait
 # TODO: Import when implemented
 # from protocols.selective_repeat import SelectiveRepeat
 

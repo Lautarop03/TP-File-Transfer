@@ -5,8 +5,8 @@ from typing import Dict, Tuple
 # from protocols.stop_and_wait import StopAndWait
 # TODO: Import when implemented
 # from protocols.selective_repeat import SelectiveRepeat
-from utils.init_message_parser import InitMessageParser
-from utils.connection_info import ConnectionInfo
+from ..utils.init_message_parser import InitMessageParser
+from ..utils.connection_info import ConnectionInfo
 
 
 def handle_client_connection(client_address: Tuple[str, int],

@@ -19,7 +19,7 @@ def add_arguments(parser):
     )
     parser.add_argument(
         "-p", "--port", type=int, default=5000,
-        etavar="", help="service port"
+        metavar="", help="service port"
     )
     parser.add_argument(
         "-s", "--storage", type=str, default="/", required=False,

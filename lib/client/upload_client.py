@@ -1,6 +1,6 @@
 from .base_client import BaseClient, TransferConfig
-from utils.file_manager import FileManager
-from utils.constants import READ_MODE, BUFFER_SIZE
+from ..utils.file_manager import FileManager
+from ..utils.constants import READ_MODE, BUFFER_SIZE
 
 
 class UploadClient(BaseClient):

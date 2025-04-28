@@ -1,6 +1,6 @@
 from .base_client import BaseClient, TransferConfig
-from utils.file_manager import FileManager
-from utils.constants import WRITE_MODE
+from ..utils.file_manager import FileManager
+from ..utils.constants import WRITE_MODE
 
 
 class DownloadClient(BaseClient):

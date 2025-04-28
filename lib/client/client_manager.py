@@ -1,7 +1,7 @@
-from utils.constants import DOWNLOAD_OPERATION, UPLOAD_OPERATION
+from ..utils.constants import DOWNLOAD_OPERATION, UPLOAD_OPERATION
 from .download_client import DownloadClient
 from .upload_client import UploadClient
-from base_client import TransferConfig
+from .base_client import TransferConfig
 import os
 
 

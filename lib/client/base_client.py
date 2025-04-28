@@ -2,11 +2,11 @@ import socket
 import threading
 from dataclasses import dataclass
 from queue import Queue
-from protocols.stop_and_wait import StopAndWait
+from ..protocols.stop_and_wait import StopAndWait
 # TODO: Import when implemented
 # from protocols.selective_repeat import SelectiveRepeat
-from utils.constants import BUFFER_SIZE
-from utils.init_message_parser import InitMessageParser
+from ..utils.constants import BUFFER_SIZE
+from ..utils.init_message_parser import InitMessageParser
 
 
 @dataclass
