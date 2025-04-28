@@ -1,7 +1,7 @@
 from utils.constants import DOWNLOAD_OPERATION, UPLOAD_OPERATION
 from .download_client import DownloadClient
 from .upload_client import UploadClient
-from utils.init_message_parser import TransferConfig
+from base_client import TransferConfig
 import os
 
 
@@ -30,6 +30,7 @@ def run(args, operation_type):
             host=args.host,
             port=args.port,
             protocol=args.protocol,
+            # esto al final es un solo path...
             file_path=args.src if operation_type == UPLOAD_OPERATION
             else args.dst,
             file_name=args.name,
