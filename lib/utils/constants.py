@@ -1,17 +1,16 @@
-BUFFER_SIZE = 1024  # Tamaño del buffer para recibir/enviar datos
+BUFFER_SIZE = 1024  # Buffer size for receiving/sending data
 HEADER_SIZE = (
-    7  # Tamaño del encabezado del paquete, 1 flags,
-    # 2 lenght payload, 4 checksum
+    7  # Packet header size, 1 flags, 2 length payload, 4 checksum
 )
-DATA_SIZE = BUFFER_SIZE - HEADER_SIZE  # Tamaño máximo de los datos del paquete
+DATA_SIZE = BUFFER_SIZE - HEADER_SIZE  # Maximum packet data size
 
-TIMEOUT = 0.5  # Tiempo de espera para recibir un ACK
+TIMEOUT = 0.5  # Timeout to receive an ACK
 
-WRITE_MODE = "wb"  # Modo de escritura para archivos binarios
+WRITE_MODE = "wb"  # Write mode for binary files
 
-READ_MODE = "rb"  # Modo de lectura para archivos binarios
+READ_MODE = "rb"  # Read mode for binary files
 
-MAX_ATTEMPTS = 10  # Maximo de intentos de envio
+MAX_ATTEMPTS = 10  # Maximum sending attempts
 
 # Operation types
 DOWNLOAD_OPERATION = 1
