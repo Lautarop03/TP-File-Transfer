@@ -1,11 +1,11 @@
 from .base_client import BaseClient, TransferConfig
 from ..utils.file_manager import FileManager
-from ..utils.constants import WRITE_MODE
+from ..utils.constants import DOWNLOAD_OPERATION, WRITE_MODE
 
 
 class DownloadClient(BaseClient):
     def __init__(self, config: TransferConfig):
-        super().__init__(config)
+        super().__init__(config, DOWNLOAD_OPERATION)
         self.file_manager = None
 
     def data_worker(self):

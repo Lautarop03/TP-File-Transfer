@@ -6,7 +6,7 @@ from ..protocols.stop_and_wait import StopAndWait
 # TODO: Import when implemented
 # from protocols.selective_repeat import SelectiveRepeat
 from ..utils.constants import BUFFER_SIZE
-from ..utils.init_message_parser import InitMessageParser
+from ..utils.segments import InitSegment
 
 
 @dataclass
@@ -15,24 +15,29 @@ class TransferConfig:
     server_port: int
     file_path: str
     is_download: bool
-    protocol: str  # "sw" or "sr"
+    protocol_code: int  # STOP_AND_WAIT or SELECTIVE_REPEAT
     verbose: bool = False
 
 
 class BaseClient:
-    def __init__(self, config: TransferConfig):
+    def __init__(self, config: TransferConfig, op_code):
         self.config = config
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.protocol_handler = None
         self.data_queue = Queue()  # For transferring data between threads
         self.transfer_complete = threading.Event()
         self.error = None
+        self.op_code = op_code
 
-    def init_connection(self) -> bool:
+    def init_connection(self, verbose) -> bool:
         """Initialize connection with server"""
         try:
             # Create and send INIT message
-            init_message = InitMessageParser.create_init_message(self.config)
+            init_segment = InitSegment(self.op_code, self.config.protocol_code,
+                                       0b0, self.config.file_path)
+
+            init_message = init_segment.serialize(verbose)
+
             self.socket.sendto(
                 init_message, (self.config.server_host,
                                self.config.server_port))

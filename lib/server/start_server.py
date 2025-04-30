@@ -2,10 +2,12 @@ import socket
 import sys
 import threading
 from typing import Dict, Tuple
+
+from lib.utils.constants import BUFFER_SIZE
 # from protocols.stop_and_wait import StopAndWait
 # TODO: Import when implemented
 # from protocols.selective_repeat import SelectiveRepeat
-from ..utils.init_message_parser import InitMessageParser
+from ..utils.segments import InitSegment
 from ..utils.connection_info import ConnectionInfo
 
 
@@ -36,33 +38,31 @@ def process_message(data: bytes, client_address: Tuple[str, int],
         # Check if this is a new client (INIT message)
         with client_connections_lock:
             if client_address not in client_connections:
-                success, result = InitMessageParser.parse(
-                    data, server_socket, client_address, args.verbose)
-                if not success:
-                    error_msg = f"Invalid INIT message: {result}"
-                    if args.verbose:
-                        print(error_msg)
-                    server_socket.sendto(
-                        f"ERROR: {error_msg}".encode(), client_address)
-                    return
+                init_segment = InitSegment.deserialize(data)
 
-                client_connections[client_address] = result
-                # Send acknowledgment for successful INIT
-                server_socket.sendto(b"INIT_ACK", client_address)
+                connectionInfo = ConnectionInfo(init_segment)
+
+                client_connections[client_address] = connectionInfo
+
+                init_ack = InitSegment(init_segment.opcode,
+                                       init_segment.protocol, 0b1, "")
+
+                init_ack_bytes = init_ack.serialize(args.verbose)
+
+                # Send INIT_ACK for successful INIT
+                server_socket.sendto(init_ack_bytes, client_address)
 
                 # Start a new thread to handle the file transfer
                 transfer_thread = threading.Thread(
                     target=handle_client_connection,
-                    args=(client_address, result)
+                    args=(client_address, connectionInfo)
                 )
                 transfer_thread.daemon = True
                 transfer_thread.start()
                 return
 
             # If not an INIT message, let the protocol handler handle it
-            conn_info = client_connections[client_address]
-            if conn_info.protocol == "sw":
-                conn_info.protocol_handler.receive()
+            client_connections[client_address].protocol_handler.receive()
 
     except Exception as e:
         if args.verbose:
@@ -98,7 +98,7 @@ def run(args):
 
         while True:
             # Receive data
-            data, client_address = server_socket.recvfrom(1024)
+            data, client_address = server_socket.recvfrom(BUFFER_SIZE)
 
             # Create and start a new thread for message processing
             thread = threading.Thread(

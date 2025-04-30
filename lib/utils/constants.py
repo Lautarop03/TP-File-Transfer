@@ -12,6 +12,10 @@ READ_MODE = "rb"  # Read mode for binary files
 
 MAX_ATTEMPTS = 10  # Maximum sending attempts
 
-# Operation types
-DOWNLOAD_OPERATION = 1
-UPLOAD_OPERATION = 2
+# Operation Types
+DOWNLOAD_OPERATION = 0b1
+UPLOAD_OPERATION = 0b1
+
+# Protocol Types
+STOP_AND_WAIT = 0b0
+SELECTIVE_REPEAT = 0b1

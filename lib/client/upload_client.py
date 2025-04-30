@@ -1,11 +1,11 @@
 from .base_client import BaseClient, TransferConfig
 from ..utils.file_manager import FileManager
-from ..utils.constants import READ_MODE, BUFFER_SIZE
+from ..utils.constants import READ_MODE, BUFFER_SIZE, UPLOAD_OPERATION
 
 
 class UploadClient(BaseClient):
     def __init__(self, config: TransferConfig):
-        super().__init__(config)
+        super().__init__(config, UPLOAD_OPERATION)
         self.file_manager = None
 
     def data_worker(self):
@@ -19,6 +19,8 @@ class UploadClient(BaseClient):
                 data = self.file_manager.read(BUFFER_SIZE)
                 self.data_queue.put(data)
                 file_size -= len(data)
+                # TODO: The protocol must create the message here
+                # REVIEW if data queue is needed...
 
             # Signal end of file
             self.data_queue.put(b"EOF")
@@ -43,6 +45,8 @@ class UploadClient(BaseClient):
                     self.protocol_handler.send(data)
 
                     if data == b"EOF":
+                        # TODO: EOF is a flag we need to send
+                        # for the server to know
                         if self.config.verbose:
                             print("Upload complete")
                         break
