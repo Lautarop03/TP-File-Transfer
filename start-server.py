@@ -6,13 +6,12 @@ def add_arguments(parser):
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument(
         "-v", "--verbose", action="store_true",
-        default=False, help="increase output verbosity",
+        help="increase output verbosity",
     )
     verbosity.add_argument(
         "-q", "--quiet", action="store_true",
-        default=True, help="decrease output verbosity",
+        help="decrease output verbosity",
     )
-
     parser.add_argument(
         "-H", "--host", type=str, default="0.0.0.0",
         metavar="", help="service IP address",
@@ -22,7 +21,7 @@ def add_arguments(parser):
         metavar="", help="service port"
     )
     parser.add_argument(
-        "-s", "--storage", type=str, default="/", required=False,
+        "-s", "--storage", type=str, default="files/server/", required=False,
         metavar="", help="storage dir path",
     )
     parser.add_argument(

@@ -1,0 +1,6 @@
+__pycache__/
+
+**/__pycache__/
+
+# Ignore the 'files' directory in the root (same level as .gitignore)
+files/

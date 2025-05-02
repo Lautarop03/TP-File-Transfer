@@ -6,17 +6,20 @@ from ..utils.constants import READ_MODE, BUFFER_SIZE, UPLOAD_OPERATION
 class UploadClient(BaseClient):
     def __init__(self, config: TransferConfig):
         super().__init__(config, UPLOAD_OPERATION)
-        self.file_manager = None
+        self.file_manager = FileManager(self.config.file_path, READ_MODE)
 
     def data_worker(self):
         """Worker thread that reads data from file"""
+        print(f"Data worker start, reading from:{self.file_manager.path}")
         try:
-            self.file_manager = FileManager(self.config.file_path, READ_MODE)
             self.file_manager.open()
             file_size = self.file_manager.file_size()
+            print(f"Data worker, size is:{file_size}")
 
             while file_size > 0:
+                print("Start to read file")
                 data = self.file_manager.read(BUFFER_SIZE)
+                print(f"Read file on data worker: {data}")
                 self.data_queue.put(data)
                 file_size -= len(data)
                 # TODO: The protocol must create the message here
@@ -36,8 +39,10 @@ class UploadClient(BaseClient):
     def protocol_worker(self):
         """Worker thread that handles protocol and sends data"""
         try:
+            print("protocol worker start")
             while True:
                 data = self.data_queue.get()
+                print(f"Protocol worker: {data}")
                 if data is None:  # Error signal
                     break
 

@@ -4,7 +4,9 @@ HEADER_SIZE = (
 )
 DATA_SIZE = BUFFER_SIZE - HEADER_SIZE  # Maximum packet data size
 
-TIMEOUT = 0.5  # Timeout to receive an ACK
+TIMEOUT = 2  # Timeout to receive an ACK
+
+APPEND_MODE = "ab"  # Append mode for binary files
 
 WRITE_MODE = "wb"  # Write mode for binary files
 
@@ -13,7 +15,7 @@ READ_MODE = "rb"  # Read mode for binary files
 MAX_ATTEMPTS = 10  # Maximum sending attempts
 
 # Operation Types
-DOWNLOAD_OPERATION = 0b1
+DOWNLOAD_OPERATION = 0b0
 UPLOAD_OPERATION = 0b1
 
 # Protocol Types

@@ -14,6 +14,13 @@ class InitSegment:
         return (self.ack << 2) | (self.opcode << 1) | self.protocol
 
     def serialize(self, verbose=False):
+        if verbose:
+            print(f"Serializing InitMessage: "
+                  f"\n\t- ack: {self.ack}"
+                  f"\n\t- opcode: {self.opcode}"
+                  f"\n\t- protocol: {self.protocol}"
+                  f"\n\t- name: {self.name}")
+
         header_byte = self._build_header()
         header_bytes = bytes([header_byte])
 
@@ -36,7 +43,7 @@ class InitSegment:
         return final_packet
 
     @staticmethod
-    def deserialize(data) -> 'InitSegment':
+    def deserialize(data, verbose=False) -> 'InitSegment':
         if len(data) < 6:
             raise ValueError("Packet too short")
 
@@ -57,6 +64,13 @@ class InitSegment:
         opcode = (header_byte >> 1) & 0b1
         protocol = header_byte & 0b1
 
+        if verbose:
+            print("Deserialize InitSegment result:")
+            print("\t opcode:", opcode)
+            print("\t protocol:", protocol)
+            print("\t ack:", ack)
+            print("\t name:", file_name)
+
         return InitSegment(opcode, protocol, ack, file_name)
 
 
@@ -71,7 +85,7 @@ class StopAndWaitSegment:
     def _build_header(self):
         return (self.seq_num << 2) | (self.ack_num << 1) | self.eof_num
 
-    def serialize(self, verbose=False):
+    def serialize(self, verbose=True):
         header_byte = self._build_header()
         header_bytes = bytes([header_byte])
         payload_len_bytes = len(self.payload).to_bytes(2, byteorder="big")

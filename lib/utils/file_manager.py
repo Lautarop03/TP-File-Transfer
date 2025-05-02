@@ -15,10 +15,10 @@ class FileManager:
             print(f"Error opening file: {e}")
             self.file = None
 
-    def read(self):
+    def read(self, size=DATA_SIZE):
         if self.file and "rb" in self.mode:
             try:
-                return self.file.read(DATA_SIZE)
+                return self.file.read(size)
             except Exception as e:
                 print(f"Error reading file: {e}")
         else:
@@ -33,6 +33,15 @@ class FileManager:
                 print(f"Error writing to file: {e}")
         else:
             print("File not opened in binary write mode.")
+
+    def append(self, data):
+        if self.file and ("ab" in self.mode):
+            try:
+                self.file.write(data)
+            except Exception as e:
+                print(f"Error appending to file: {e}")
+        else:
+            print("File not opened in binary append mode.")
 
     def close(self):
         if self.file:

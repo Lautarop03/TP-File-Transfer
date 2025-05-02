@@ -4,13 +4,14 @@ from lib.utils.constants import UPLOAD_OPERATION
 
 
 def add_arguments(parser):
-    parser.add_argument(
-        "-s", "--src", type=str, required=False,
-        metavar="", help="source file path"
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        "-v", "--verbose", action="store_true",
+        help="increase output verbosity",
     )
-    parser.add_argument(
-        "-n", "--name", type=str, required=False,
-        metavar="", help="file name"
+    verbosity.add_argument(
+        "-q", "--quiet", action="store_true",
+        help="decrease output verbosity",
     )
     parser.add_argument(
         "-H", "--host", type=str, required=False,
@@ -21,18 +22,17 @@ def add_arguments(parser):
         metavar="", help="server port"
     )
     parser.add_argument(
+        "-n", "--name", type=str, required=False,
+        metavar="", help="file name"
+    )
+    parser.add_argument(
+        "-s", "--src", type=str, required=False,
+        metavar="", help="source file path"
+    )
+    parser.add_argument(
         "-r", "--protocol", type=str, choices=["sw", "sr"],
         default="sw", required=False,
         metavar="", help="error recovery protocol",
-    )
-    verbosity = parser.add_mutually_exclusive_group()
-    verbosity.add_argument(
-        "-v", "--verbose", action="store_true",
-        default=False, help="increase output verbosity",
-    )
-    verbosity.add_argument(
-        "-q", "--quiet", action="store_true",
-        default=True, help="decrease output verbosity",
     )
 
 

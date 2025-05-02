@@ -20,8 +20,7 @@ class DownloadClient(BaseClient):
                     break
 
                 if data == b"EOF":
-                    if self.config.verbose:
-                        print("Download complete")
+                    print("Download complete")
                     break
 
                 self.file_manager.write(data)
