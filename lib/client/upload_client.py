@@ -29,8 +29,10 @@ class UploadClient(BaseClient):
             self.data_queue.put(b"EOF")
 
         except Exception as e:
-            self.error = f"Error reading file: {str(e)}"
-            self.data_queue.put(None)  # Signal protocol worker to stop
+            error_msg = f"Error reading file: {str(e)}"
+            self.error = error_msg
+            # Send error as bytes through the queue
+            self.data_queue.put(error_msg.encode())
             self.transfer_complete.set()
         finally:
             if self.file_manager:
@@ -47,11 +49,19 @@ class UploadClient(BaseClient):
                     break
 
                 try:
-                    self.protocol_handler.send(data)
+                    # If data is a string (error message), encode it
+                    if isinstance(data, str):
+                        data = data.encode()
+                    
+                    # Send data in chunks that fit within the buffer size
+                    chunk_size = BUFFER_SIZE - 7  # Account for header size
+                    for i in range(0, len(data), chunk_size):
+                        chunk = data[i:i + chunk_size]
+                        self.protocol_handler.send(chunk)
 
                     if data == b"EOF":
-                        # TODO: EOF is a flag we need to send
-                        # for the server to know
+                        # Send EOF packet
+                        self.protocol_handler.send(b"", eof=1)
                         if self.config.verbose:
                             print("Upload complete")
                         break

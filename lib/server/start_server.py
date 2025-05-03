@@ -38,6 +38,16 @@ def process_message(data: bytes, client_address: Tuple[str, int],
         if args.verbose:
             print(f"data: {data}")
 
+        # Check if this is a FIN message
+        if data == b"FIN":
+            if not args.quiet:
+                print(f"Received FIN message from {client_address}")
+            # Remove client from connections
+            with client_connections_lock:
+                if client_address in client_connections:
+                    del client_connections[client_address]
+            return
+
         # Check if this is a new client (INIT message)
         with client_connections_lock:
             if client_address not in client_connections:
@@ -66,22 +76,12 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                     print(f"INIT_ACK bytes: {init_ack_bytes}")
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
-
-                # Start a new thread to handle the file transfer
-                # transfer_thread = threading.Thread(
-                #     target=handle_client_connection,
-                #     args=(client_address, connectionInfo)
-                # )
-                # transfer_thread.daemon = True
-                # transfer_thread.start()
-                # return
             else:
                 print("IS OLD CLIENT")
                 # If not an INIT message, let the protocol handler handle it
                 client_info = client_connections[client_address]
                 client_info.protocol_handler.receive_file(
                     args.storage + '/' + client_info.file_path)
-                # client_connections[client_address].protocol_handler.receive()
 
     except Exception as e:
         if args.verbose:

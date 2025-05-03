@@ -94,8 +94,11 @@ class BaseClient:
         """Abstract method to be implemented by subclasses"""
         raise NotImplementedError
 
-    def start_transfer(self) -> bool:
-        """Start the file transfer process"""
+    def start_transfer(self) -> tuple[bool, str | None]:
+        """Start the file transfer process
+        Returns:
+            tuple[bool, str | None]: (success status, error message if any)
+        """
         # if not self.init_connection():
         #     self.error = "Failed to initialize connection"
         #     return False
@@ -110,23 +113,35 @@ class BaseClient:
         data_thread.start()
         protocol_thread.start()
 
-        # Wait for transfer to complete
-        self.transfer_complete.wait()
+        try:
+            # Wait for transfer to complete
+            self.transfer_complete.wait()
 
-        if not self.config.quiet:
-            print("Gracefully shutting down connection")
+            if not self.config.quiet:
+                print("Gracefully shutting down connection")
 
-        self.socket.sendto("FIN", self.config.server_address)
-        self.socket.close()
+            # Send FIN message as bytes
+            self.socket.sendto(b"FIN", self.config.server_address)
+            
+            # Wait for threads to complete
+            data_thread.join(timeout=5)  # 5 second timeout
+            protocol_thread.join(timeout=5)  # 5 second timeout
+            
+            self.socket.close()
 
-        print("Gracefully shut down connecion with server")
+            print("Gracefully shut down connection with server")
 
-        # Check for errors
-        if self.error:
-            print(f"Transfer failed: {self.error}")
-            return False
+            # Check for errors
+            if self.error:
+                print(f"Transfer failed: {self.error}")
+                return False, self.error
 
-        return True
+            return True, None
+
+        except Exception as e:
+            self.error = f"Error during transfer: {str(e)}"
+            self.transfer_complete.set()  # Ensure event is set even on error
+            return False, self.error
 
     def cleanup(self):
         """Clean up resources"""

@@ -83,8 +83,11 @@ def run(args, operation_type):
 
         if not success:
             print("Transfer failed, shut down")
-        if not args.quiet:
-            print(f"Error: {error}")
+            if not args.quiet:
+                print(f"Error: {error}")
+        
+        elif not args.quiet:
+            print("Successfully transferred file")
 
         return 0 if success else 1
 
