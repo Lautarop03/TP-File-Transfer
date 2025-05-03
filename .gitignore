@@ -1,6 +1,6 @@
 __pycache__/
-*.pyc
-*.py[cod]
-*$py.class
+
+**/__pycache__/
+
 # Ignore the 'files' directory in the root (same level as .gitignore)
 files/
