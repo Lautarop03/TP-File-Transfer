@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from lib.protocols.stop_and_wait import StopAndWait
+from lib.protocols.selective_repeat import SelectiveRepeat
 from lib.utils.constants import DOWNLOAD_OPERATION, STOP_AND_WAIT
 from lib.utils.segments import InitSegment
 
@@ -22,5 +23,6 @@ class ConnectionInfo:
             self.protocol_handler = StopAndWait(socket, address,
                                                 verbose, quiet)
         else:
-            self.protocol_handler = None
+            self.protocol_handler = SelectiveRepeat(socket, address,
+                                                    verbose, quiet)
         # None se reemplaza con SelectiveRepeat(socket, ip, port)

@@ -143,8 +143,10 @@ class SelectiveRepeatSegment:
         ack_num_bytes = self.ack_num.to_bytes(2, byteorder="big")
         win_size_bytes = self.win_size.to_bytes(2, byteorder="big")
 
-        packet_to_crc = seq_num_bytes + ack_num_bytes + win_size_bytes
-        + payload_len_bytes + self.payload
+        packet_to_crc = seq_num_bytes + ack_num_bytes \
+            + win_size_bytes \
+            + payload_len_bytes \
+            + self.payload
         crc = zlib.crc32(packet_to_crc) & 0xFFFFFFFF
         crc_bytes = crc.to_bytes(4, byteorder="big")
 
