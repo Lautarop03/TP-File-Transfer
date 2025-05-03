@@ -18,7 +18,7 @@ class UploadClient(BaseClient):
 
             while file_size > 0:
                 print("Start to read file")
-                data = self.file_manager.read(BUFFER_SIZE)
+                data = self.file_manager.read(BUFFER_SIZE - 24)
                 print(f"Read file on data worker: {data}")
                 self.data_queue.put(data)
                 file_size -= len(data)
@@ -52,19 +52,17 @@ class UploadClient(BaseClient):
                     # If data is a string (error message), encode it
                     if isinstance(data, str):
                         data = data.encode()
-                    
                     # Send data in chunks that fit within the buffer size
-                    chunk_size = BUFFER_SIZE - 7  # Account for header size
-                    for i in range(0, len(data), chunk_size):
-                        chunk = data[i:i + chunk_size]
-                        self.protocol_handler.send(chunk)
-
+                    # chunk_size = BUFFER_SIZE - 7  # Account for header size
+                    # for i in range(0, len(data), chunk_size):
+                    #     chunk = data[i:i + chunk_size]
                     if data == b"EOF":
                         # Send EOF packet
                         self.protocol_handler.send(b"", eof=1)
                         if self.config.verbose:
                             print("Upload complete")
                         break
+                    self.protocol_handler.send(data)
 
                 except Exception as e:
                     if self.config.verbose:

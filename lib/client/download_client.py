@@ -39,7 +39,7 @@ class DownloadClient(BaseClient):
         try:
             while True:
                 try:
-                    data = self.protocol_handler.receive()
+                    data = self.protocol_handler.receive_file()
                     self.data_queue.put(data)
 
                     if data == b"EOF":

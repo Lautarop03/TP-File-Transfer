@@ -11,14 +11,16 @@ from ..utils.segments import InitSegment
 from ..utils.connection_info import ConnectionInfo
 
 
-def handle_client_connection(client_address: Tuple[str, int],
+def handle_client_connection(args, data: bytes,
+                             client_address: Tuple[str, int],
                              conn_info: ConnectionInfo) -> bool:
     """Handle the file transfer for a client in a separate thread"""
     try:
         if conn_info.is_download:
             conn_info.protocol_handler.send_file(conn_info.file_path)
         else:
-            conn_info.protocol_handler.receive_file(conn_info.file_path)
+            conn_info.protocol_handler.receive_file(
+                data, args.storage + '/' + conn_info.file_path)
     except Exception as e:
         print(
             f"Error on {'download' if conn_info.is_download else 'upload'}"
@@ -77,11 +79,13 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
             else:
-                print("IS OLD CLIENT")
+                print("Is existing client")
+                handle_client_connection(args, data, client_address,
+                                         client_connections[client_address])
                 # If not an INIT message, let the protocol handler handle it
-                client_info = client_connections[client_address]
-                client_info.protocol_handler.receive_file(
-                    args.storage + '/' + client_info.file_path)
+                # client_info = client_connections[client_address]
+                # client_info.protocol_handler.receive_file(
+                #     args.storage + '/' + client_info.file_path)
 
     except Exception as e:
         if args.verbose:

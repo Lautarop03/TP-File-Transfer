@@ -12,3 +12,12 @@ python3 start-server.py -v -H 127.0.0.1 -p 1234 -s ./files/server -r sw
 python3 upload.py -v -H 127.0.0.1 -p 1234 -s ./files/client/clientfile.txt -n uploadfile.txt -r sw
 
 python3 download.py -v -H 127.0.0.1 -p 1234 -d ./files/client -n serverfile.txt -r sw
+
+
+windows
+
+python start-server.py -v -H 127.0.0.1 -p 1234 -s ./files/server -r sw
+
+python upload.py -v -H 127.0.0.1 -p 1234 -s ./files/client/clientfile.txt -n uploadfile.txt -r sw
+
+python download.py -v -H 127.0.0.1 -p 1234 -d ./files/client -n serverfile.txt -r sw
