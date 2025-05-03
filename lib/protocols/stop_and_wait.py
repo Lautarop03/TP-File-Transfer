@@ -1,7 +1,7 @@
 import socket
 from lib.utils.file_manager import FileManager
 from lib.utils.constants import (
-    APPEND_MODE, TIMEOUT, BUFFER_SIZE, READ_MODE, MAX_ATTEMPTS)
+    TIMEOUT, BUFFER_SIZE, READ_MODE, MAX_ATTEMPTS)
 from lib.utils.segments import StopAndWaitSegment
 from lib.exceptions import MaxSendAttemptsExceeded
 # , PacketDuplicateOrCorrupted
@@ -94,7 +94,7 @@ class StopAndWait:
             new_ack_num = 1 - self.ack
             is_repeated = True
             # send the last ACK I received
-        
+
         ack_packet = StopAndWaitSegment(ack_num=new_ack_num)
         ack_bytes = ack_packet.serialize()
         # self.socket.sendto(serialized_ack, address)
@@ -119,39 +119,33 @@ class StopAndWait:
 
         self.send(b"", eof=1)  # Send EOF
 
-    def receive_file(self, data_bytes, path):
+    def receive_file(self, data_bytes) -> tuple[bytes, bool, bool]:
+        """
+        Receives sw data bytes and responds to the message,
+        returns a tuple of bool:
+            - 0: Indicates if the payload is repeated
+            - 1: Indicates if the received datagram indicates EOF
+        """
 
         (is_repeated, data, ack_bytes) = self.unpack(data_bytes)
+        is_eof = False
 
-        file_manager = FileManager(path, APPEND_MODE)
-        file_manager.open()
-        print(f"[SERVER] Receiving file: {path}")
-
-        # while True:
         try:
             if data.eof_num == 1:
-                print("[SERVER] EOF received.")
-                # break
+                # print(f"[{self.actorName}] EOF received.")
+                print("EOF received.")
+                is_eof = True
 
             else:
-                # is_repeated, ack_packet = self.receive(data_bytes)
-                if not self.quiet:
-                    print("Sending sw ACK")
                 if self.verbose:
-                    print(f"payload received: {data.payload}")
+                    print(f"sw payload received: {data.payload}")
                     print(f"sw ACK bytes: {ack_bytes}")
-                if not is_repeated:
-                    file_manager.append(data.payload)
+                if not self.quiet:
+                    print(f"Sending sw ACK to: {self.destination_address}")
 
             self.socket.sendto(ack_bytes, self.destination_address)
-            # Write the file
 
-        # except PacketDuplicateOrCorrupted:
-        #     # continue
-        #     None
         except Exception as e:
-            print(f"[SERVER] Error receiving: {e}")  # Debug
-            # break
-        finally:
-            file_manager.close()
-            print("[SERVER] File saved successfully.")  # Debug
+            print(f"[{self.actorName}] Error receiving: {e}")  # Debug
+
+        return (data.payload, is_repeated, is_eof)

@@ -1,97 +1,93 @@
-from ..utils.constants import (DOWNLOAD_OPERATION, STOP_AND_WAIT,
-                               UPLOAD_OPERATION, SELECTIVE_REPEAT)
-from .download_client import DownloadClient
-from .upload_client import UploadClient
-from .base_client import TransferConfig
-import os
+from lib.utils.segments import InitSegment
+from ..utils.constants import BUFFER_SIZE
 
 
-def create_client(operation_type, config):
-    """Create and return appropriate client instance based on operation type"""
-    if operation_type == DOWNLOAD_OPERATION:
-        return DownloadClient(config)
-    else:
-        return UploadClient(config)
-
-
-def run(args, operation_type):
+def run(operation):
     """Create and run appropriate client based on operation
     type and arguments"""
-    is_upload_operation = operation_type == UPLOAD_OPERATION
-
-    if operation_type == UPLOAD_OPERATION:
-        file = args.name
-    else:
-        file = args.dst
-
-    if args.verbose:
-        print("=== Server Config ===")
-        print(f"Verbose      : {args.verbose}")
-        print(f"Quiet        : {args.quiet}")
-        print(f"Host         : {args.host}")
-        print(f"Port         : {args.port}")
-        if is_upload_operation:
-            print(f"Name         : {file}")
-        else:
-            print(f"Destination  : {file}")
-        print(f"Protocol     : {args.protocol}")
 
     try:
-        # Validate file paths
-        if is_upload_operation:
-            if not args.src or not os.path.exists(args.src):
-                print(f"Source file not found: {args.src}")
-                return 1
-            if args.verbose:
-                print(f"File {args.src} found for upload")
-            file_path = args.src
-        else:
-            file_path = args.dst
-
-        server_address = (args.host, args.port)
-
-        # Create config object
-        config = TransferConfig(
-            server_address=server_address,
-            file_name=file,
-            file_path=file_path,
-            verbose=args.verbose,
-            quiet=args.quiet
-        )
-
-        # Create and initialize client
-        client = create_client(operation_type, config)
-
-        if args.verbose:
-            print("Client succesfully created")
-
-        protocol = STOP_AND_WAIT if args.protocol == 'sw' else SELECTIVE_REPEAT
-
         # Initialize connection
-        if not client.init_connection(protocol, args.verbose,
-                                      args.quiet):
+        if not init_connection(operation):
             print("Connection failed")
-            if not args.quiet:
-                print(f"Error: {client.error}")
+            if not operation.quiet:
+                print(f"Error: {operation.error}")
             return 1
 
-        if not args.quiet:
-            print("Starting transfer")
+        if not operation.quiet:
+            print("\nStarting transfer")
 
-        # Start transfer
-        success, error = client.start_transfer()
+        # if operation.is_download:
+        #     is_finished = False
+        #     # Start transfer
+        #     while not is_finished:
+        #         data, _ = operation.socket.recvfrom(BUFFER_SIZE)
+        #         # Start transfer
+        #         is_finished = operation.transfer(data)
+        # else:
+        #     operation.transfer("")
 
-        if not success:
-            print("Transfer failed, shut down")
-            if not args.quiet:
-                print(f"Error: {error}")
-        
-        elif not args.quiet:
-            print("Successfully transferred file")
+        operation.transfer(None)
 
-        return 0 if success else 1
+        # if not success:
+        #     print("Transfer failed, shut down")
+        #     if not operation.quiet:
+        #         print(f"Error: {error}")
+
+        # elif not operation.quiet:
+        #     print("Successfully transferred file")
+
+        # return 0 if success else 1
+
+        return 0
 
     except Exception as e:
-        if not args.quiet:
+        if not operation.quiet:
             print(f"Error: {e}")
         return 1
+
+
+def init_connection(operation) -> bool:
+    """Initialize connection with server"""
+    try:
+        if not operation.quiet:
+            print("Initiating connection with server")
+
+        # Create and send INIT message
+        init_segment = InitSegment(operation.op_code, operation.protocol_code,
+                                   0b0, operation.config.file_name)
+
+        init_message = init_segment.serialize(operation.verbose)
+
+        if operation.verbose:
+            print(f"Created init message with data: {init_message}")
+            print("Trying to connect with server running on "
+                  f"{operation.config.server_address[0]}:"
+                  f"{operation.config.server_address[1]}")
+
+        operation.socket.sendto(
+            init_message, operation.config.server_address)
+
+        if not operation.quiet:
+            print("Waiting for server response")
+
+        # Wait for server response
+        operation.socket.settimeout(5)  # 5 seconds timeout for INIT response
+        response, _ = operation.socket.recvfrom(BUFFER_SIZE)
+
+        if not operation.quiet:
+            print("Received server response")
+
+        if operation.verbose:
+            print(f"Received bytes: {response}")
+
+        init_segment = InitSegment.deserialize(response, operation.verbose)
+        if not init_segment.ack == 0b1:
+            operation.error = "Response from server is not ACK"
+            return False
+
+        return True
+
+    except Exception as e:
+        operation.error = f"Connection initialization failed: {str(e)}"
+        return False

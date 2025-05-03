@@ -47,6 +47,8 @@ def process_message(data: bytes, client_address: Tuple[str, int],
             # Remove client from connections
             with client_connections_lock:
                 if client_address in client_connections:
+                    client_connection = client_connections[client_address]
+                    client_connection.protocol_handler.socket.close()
                     del client_connections[client_address]
             return
 
@@ -59,10 +61,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                     print("Successfully deserialized init segment")
 
                 connectionInfo = ConnectionInfo(init_segment, server_socket,
-                                                client_address[0],
-                                                client_address[1],
-                                                args.verbose,
-                                                args.quiet)
+                                                client_address, args)
 
                 client_connections[client_address] = connectionInfo
 
@@ -79,9 +78,14 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
             else:
-                print("Is existing client")
-                handle_client_connection(args, data, client_address,
-                                         client_connections[client_address])
+                # entity opuesto a la op
+                if args.verbose:
+                    print("Is existing client")
+                client_connections[client_address].operation_handler.transfer(
+                    data)
+
+                # handle_client_connection(args, data, client_address,
+                #                          client_connections[client_address])
                 # If not an INIT message, let the protocol handler handle it
                 # client_info = client_connections[client_address]
                 # client_info.protocol_handler.receive_file(
@@ -113,22 +117,27 @@ def run(args):
     global client_connections_lock
     client_connections_lock = threading.Lock()
 
+    server_socket.settimeout(5.0)  # 5 segundos
+
     try:
         # Bind socket to address
         server_socket.bind((args.host, args.port))
-        if args.verbose:
-            print(f"\nServer started. Listening on {args.host}:{args.port}")
+        print(f"\nServer started. Listening on {args.host}:{args.port}")
 
-        flag = 0
+        flag = 1
         while True:
-            print("\nWaiting for new client connection...\n")
-            # Receive data
-            data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+            try:
+                # Receive data
+                data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+            except socket.timeout:
+                if not args.quiet:
+                    print("[SERVER] Waiting for any client message...")
+                continue
 
-            print()
-            print(f"Received data from new client({flag}): {client_address}")
+            if not args.quiet:
+                print(f"\n[MSG N°{flag}] Received data from client:"
+                      f"{client_address}")
             flag += 1
-            print()
 
             # Create and start a new thread for message processing
             thread = threading.Thread(
@@ -138,12 +147,11 @@ def run(args):
             )
             thread.daemon = True
             thread.start()
+
     except KeyboardInterrupt:
-        if not args.quiet:
-            print("\nServer shutting down by keyboard interrupt...")
+        print("\nServer shutting down by keyboard interrupt...")
     except Exception as e:
-        if not args.quiet:
-            print(f"Server error: {e}", file=sys.stderr)
+        print(f"Server error: {e}", file=sys.stderr)
         raise e
 
     finally:
