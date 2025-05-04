@@ -13,8 +13,7 @@ from ..utils.constants import (
 
 class Downloader():
     def __init__(self, args, is_client: bool):
-        # self.config = get_transfer_config_from_args(
-        # args, args.name, args.dst)
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.destination_address = (args.host, args.port)
         self.protocol_handler = get_protocol_from_args(
@@ -27,7 +26,6 @@ class Downloader():
         self.file_path = args.dst
         self.file_manager = FileManager(args.dst, APPEND_MODE)
         self.is_client = is_client
-        self.is_download = True
         self.verbose = args.verbose
         self.quiet = args.quiet
 
@@ -76,13 +74,13 @@ class Downloader():
             self.error = f"Protocol error: {str(e)}"
             self.data_queue.put(None)  # Signal data worker to stop
 
-    def transfer(self, data):
-        if self.is_client:
-            self.transfer_for_client()
+    def transfer(self, data=None):
+        if data is None:
+            self.transfer_all_here()
         else:
             self.start_workers(data, queue.Queue())
 
-    def transfer_for_client(self):
+    def transfer_all_here(self):
         result_queue = queue.Queue()
         is_finished = False
 
@@ -91,16 +89,25 @@ class Downloader():
                 # Receive data
                 # Al socket le quedo el time out que se uso en init
                 # self.socket.settimeout(None)  # Reset timeuot
+                print("Waiting for data on downloader")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
+                print(f"Received data on downloader: {data}")
             except socket.timeout:
                 if not self.quiet:
                     print("[CLIENT] Waiting for server message...")
                 continue
-            print("i've data!!!!")
+            if self.verbose:
+                print(f"Data: {data}")
 
             self.start_workers(data, result_queue)
 
             is_finished = result_queue.get()
+        
+        print("Transfer all here finished")
+        self.file_manager.close()
+        self.socket.sendto(b"FIN", self.destination_address)
+        print("Sent FIN")
+        self.socket.close()
 
     def start_workers(self, data, result_queue):
         data_thread = threading.Thread(target=self.data_worker)
@@ -112,3 +119,7 @@ class Downloader():
 
         protocol_thread.start()
         data_thread.start()
+
+    def close_file_manager(self):
+        print("Closing file manager")
+        self.file_manager.close()

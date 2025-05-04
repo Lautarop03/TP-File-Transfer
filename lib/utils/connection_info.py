@@ -13,6 +13,7 @@ class ConnectionInfo:
     protocol: str     # "sw" for Stop & Wait, "sr" for Selective Repeat
     file_path: str    # For upload: filename to create,
     protocol_handler: object  # StopAndWait or SelectiveRepeat instance
+    finished: bool = False
 
     # def __init__(self, init_segment: 'InitSegment', socket, ip, port,
     #              verbose, quiet):
@@ -40,3 +41,6 @@ class ConnectionInfo:
                                                 args.verbose, args.quiet)
         else:
             self.protocol_handler = None
+
+    def set_finished(self, finished):
+        self.finished = finished

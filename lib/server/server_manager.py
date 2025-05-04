@@ -11,22 +11,6 @@ from ..utils.segments import InitSegment
 from ..utils.connection_info import ConnectionInfo
 
 
-def handle_client_connection(args, data: bytes,
-                             client_address: Tuple[str, int],
-                             conn_info: ConnectionInfo) -> bool:
-    """Handle the file transfer for a client in a separate thread"""
-    try:
-        if conn_info.is_download:
-            conn_info.protocol_handler.send_file(conn_info.file_path)
-        else:
-            conn_info.protocol_handler.receive_file(
-                data, args.storage + '/' + conn_info.file_path)
-    except Exception as e:
-        print(
-            f"Error on {'download' if conn_info.is_download else 'upload'}"
-            f" for {client_address}: {e}")
-
-
 def process_message(data: bytes, client_address: Tuple[str, int],
                     server_socket: socket.socket,
                     client_connections: Dict[Tuple[str, int], ConnectionInfo],
@@ -47,13 +31,15 @@ def process_message(data: bytes, client_address: Tuple[str, int],
             # Remove client from connections
             with client_connections_lock:
                 if client_address in client_connections:
-                    client_connection = client_connections[client_address]
-                    client_connection.protocol_handler.socket.close()
+                    client_connections[client_address].operation_handler.close_file_manager()
+                    client_connections[client_address].protocol_handler.socket.close()
                     del client_connections[client_address]
             return
 
+        print("previous to lock")
         # Check if this is a new client (INIT message)
         with client_connections_lock:
+            print("inside lock")
             if client_address not in client_connections:
                 init_segment = InitSegment.deserialize(data, args.verbose)
 
@@ -78,21 +64,19 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
 
+                # Needed initiation for server upload operation
                 if init_segment.opcode == DOWNLOAD_OPERATION:
-                    connectionInfo.operation_handler.transfer(None)
+                    connectionInfo.operation_handler.transfer(data, True)
             else:
+                if client_connections[client_address].finished:
+                    print("Already finished transfer with client")
+                    return
                 # entity opuesto a la op
                 if args.verbose:
                     print("Is existing client")
-                client_connections[client_address].operation_handler.transfer(
+                finished = client_connections[client_address].operation_handler.transfer(
                     data)
-
-                # handle_client_connection(args, data, client_address,
-                #                          client_connections[client_address])
-                # If not an INIT message, let the protocol handler handle it
-                # client_info = client_connections[client_address]
-                # client_info.protocol_handler.receive_file(
-                #     args.storage + '/' + client_info.file_path)
+                client_connections[client_address].set_finished(finished)
 
     except Exception as e:
         if args.verbose:

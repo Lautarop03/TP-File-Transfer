@@ -1,24 +1,23 @@
-import socket
-from lib.utils.file_manager import FileManager
+from queue import Queue, Empty
 from lib.utils.constants import (
     TIMEOUT, BUFFER_SIZE, READ_MODE, MAX_ATTEMPTS)
 from lib.utils.segments import StopAndWaitSegment
 from lib.exceptions import MaxSendAttemptsExceeded
-# , PacketDuplicateOrCorrupted
 
 
 class StopAndWait:
     def __init__(self, socket, address, verbose, quiet):
         self.destination_address = address
-
+        
         self.ack = 0  # ACK 0 o 1
         self.seq = 0  # Packet 0 o 1
         self.socket = socket
         self.send_attempts = 0
         self.verbose = verbose
         self.quiet = quiet
+        self.ack_queue = Queue()  # Queue for receiving ACKs
 
-    def send(self, payload, eof=0):  # Send a single package
+    def send(self, payload, eof=0, expect_ack=True):  # Send a single package
         sw_segment = StopAndWaitSegment(
             payload=payload, seq_num=self.seq, eof_num=eof)
 
@@ -31,32 +30,39 @@ class StopAndWait:
 
             self.socket.sendto(serialized_packet, self.destination_address)
 
-            # Wait for ACK
-            # Set the timeout for receiving the ACK
-            self.socket.settimeout(TIMEOUT)
-            try:
-                ack_packet, _ = self.socket.recvfrom(BUFFER_SIZE)
+            print(f"expect_ack: {expect_ack}")
+            if expect_ack:
+                # Wait for ACK from queue instead of socket
+                try:
+                    print("before get")
+                    ack_packet = self.ack_queue.get(timeout=TIMEOUT)
+                    print("after get")
 
-                if self.verbose:
-                    print(f"Received ACK for sw: {ack_packet}")
+                    if self.verbose:
+                        print(f"Received ACK for sw: {ack_packet}")
 
-                ack_packet = StopAndWaitSegment.deserialize(ack_packet)
+                    ack_packet = StopAndWaitSegment.deserialize(ack_packet)
 
-                if ack_packet.ack_num == self.seq:
-                    # Package received successfully
-                    self.seq = 1 - self.seq
-                    self.send_attempts = 0
-                    return
-                else:
-                    # The ACK is not what I expect
-                    # Debug
-                    print(
-                        "[StopAndWaitW] Duplicate or corrupt package:"
-                        f"{ack_packet}")
+                    print(f"ack_packet.ack_num: {ack_packet.ack_num},"
+                        f" self.seq: {self.seq}")
 
-            except socket.timeout:
-                print("[StopAndWait] Timeout waiting for ACK")  # Debug
+                    if ack_packet.ack_num == self.seq:
+                        # Package received successfully
+                        self.seq = 1 - self.seq
+                        self.send_attempts = 0
+                        return
+                    else:
+                        # The ACK is not what I expect
+                        # Debug
+                        print(
+                            "[StopAndWaitW] Duplicate or corrupt package:"
+                            f"{ack_packet}")
 
+                except Empty:
+                    print("[StopAndWait] Timeout waiting for ACK")  # Debug
+            else:
+                self.seq = 1 - self.seq
+                return
             self.send_attempts += 1
 
         # exited the while, the packet could not be sent -> the program closes
@@ -65,27 +71,30 @@ class StopAndWait:
             f" after {MAX_ATTEMPTS} attempts."
         )
 
+    def put_ack_bytes(self, ack_data):
+        """Put an ACK packet into the queue"""
+        print(f"Putting ack bytes into sw: {ack_data}")
+        self.ack_queue.put(ack_data)
+
     def unpack(self, serialized_data: bytes) -> tuple[bool, StopAndWaitSegment,
                                                       bytes]:
         """
         Receive sw package and deserializes, return bytes for ack
         """
-
-        # serialized_packet, address = self.socket.recvfrom(BUFFER_SIZE)
-
-        if self.verbose:
-            print(f"Received sw data {serialized_data}")
         deserialized_data = StopAndWaitSegment.deserialize(serialized_data)
+
+        print(f"seq_num: {deserialized_data.seq_num},"
+              f" ack: {self.ack}")
 
         if deserialized_data.seq_num == self.ack:
             # Expected packet
             # Send ACK
             ack_packet = StopAndWaitSegment(ack_num=self.ack)
-            new_ack_num = self.ack
             is_repeated = False
 
             # self.socket.sendto(serialized_ack, address)
             self.ack = 1 - self.ack
+            new_ack_num = self.ack
 
         else:
             # Duplicate or out-of-order packet
@@ -106,19 +115,19 @@ class StopAndWait:
 
         return (is_repeated, deserialized_data, ack_bytes)
 
-    def send_file(self, file_path):
-        file_manager = FileManager(file_path, READ_MODE)
-        file_manager.open()
-        file_size = file_manager.file_size()
+    # def send_file(self, file_path):
+    #     file_manager = FileManager(file_path, READ_MODE)
+    #     file_manager.open()
+    #     file_size = file_manager.file_size()
 
-        while file_size > 0:
-            data = file_manager.read()
-            self.send(data)
-            file_size -= len(data)
+    #     while file_size > 0:
+    #         data = file_manager.read()
+    #         self.send(data)
+    #         file_size -= len(data)
 
-        file_manager.close()
+    #     file_manager.close()
 
-        self.send(b"", eof=1)  # Send EOF
+    #     self.send(b"", eof=1)  # Send EOF
 
     def receive_file(self, data_bytes) -> tuple[bytes, bool, bool]:
         """
@@ -137,12 +146,11 @@ class StopAndWait:
                 print("EOF received.")
                 is_eof = True
 
-            else:
-                if self.verbose:
-                    print(f"sw payload received: {data.payload}")
-                    print(f"sw ACK bytes: {ack_bytes}")
-                if not self.quiet:
-                    print(f"Sending sw ACK to: {self.destination_address}")
+            if self.verbose:
+                print(f"sw payload received: {data.payload}")
+                print(f"sw ACK bytes: {ack_bytes}")
+            if not self.quiet:
+                print(f"Sending sw ACK to: {self.destination_address}")
 
             self.socket.sendto(ack_bytes, self.destination_address)
 

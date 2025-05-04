@@ -27,7 +27,7 @@ def run(operation):
         # else:
         #     operation.transfer("")
 
-        operation.transfer(None)
+        operation.transfer()
 
         # if not success:
         #     print("Transfer failed, shut down")
