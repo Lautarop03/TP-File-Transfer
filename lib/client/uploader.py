@@ -78,15 +78,17 @@ class Uploader():
                 result_queue.put(True)
 
             try:
-                if data == EOF_MARKER:
+                if data is EOF_MARKER:
                     # Send EOF packet
                     self.protocol_handler.send(
                         b"", eof=1, expect_ack=expect_ack)
                     if self.verbose:
                         print("Upload complete")
                     result_queue.put(True)
-                self.protocol_handler.send(data, eof=0, expect_ack=expect_ack)
-                result_queue.put(False)
+                else:
+                    self.protocol_handler.send(
+                        data, eof=0, expect_ack=expect_ack)
+                    result_queue.put(False)
 
             except Exception as e:
                 if self.verbose:

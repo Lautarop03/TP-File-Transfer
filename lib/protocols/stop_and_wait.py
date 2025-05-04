@@ -1,6 +1,6 @@
 from queue import Queue, Empty
 from lib.utils.constants import (
-    TIMEOUT, BUFFER_SIZE, READ_MODE, MAX_ATTEMPTS)
+    TIMEOUT, MAX_ATTEMPTS)
 from lib.utils.segments import StopAndWaitSegment
 from lib.exceptions import MaxSendAttemptsExceeded
 
@@ -8,7 +8,7 @@ from lib.exceptions import MaxSendAttemptsExceeded
 class StopAndWait:
     def __init__(self, socket, address, verbose, quiet):
         self.destination_address = address
-        
+
         self.ack = 0  # ACK 0 o 1
         self.seq = 0  # Packet 0 o 1
         self.socket = socket
@@ -44,7 +44,7 @@ class StopAndWait:
                     ack_packet = StopAndWaitSegment.deserialize(ack_packet)
 
                     print(f"ack_packet.ack_num: {ack_packet.ack_num},"
-                        f" self.seq: {self.seq}")
+                          f" self.seq: {self.seq}")
 
                     if ack_packet.ack_num == self.seq:
                         # Package received successfully
@@ -93,8 +93,8 @@ class StopAndWait:
             is_repeated = False
 
             # self.socket.sendto(serialized_ack, address)
-            self.ack = 1 - self.ack
             new_ack_num = self.ack
+            self.ack = 1 - self.ack
 
         else:
             # Duplicate or out-of-order packet

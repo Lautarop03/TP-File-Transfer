@@ -33,8 +33,6 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 if client_address in client_connections:
                     client_connections[
                         client_address].operation_handler.close_file_manager()
-                    client_connections[
-                        client_address].protocol_handler.socket.close()
                     del client_connections[client_address]
             return
 
