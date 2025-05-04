@@ -1,0 +1,144 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[left=2.5cm, top=2.5cm, right=2.5cm, bottom=2.5cm]{geometry}
+\usepackage[spanish]{babel}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+
+\begin{document}
+
+% Carátula
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+    {\Large {Introducción a los Sistemas Distribuidos (75.43)}}\\[0.5cm]
+    {\Large{TP Nº1: File Transfer}}\\[1cm]
+    {\large Esteban Carisimo y Juan Ignacio Lopez Pecora}\\[0.5cm]
+    {\large Facultad de Ingeniería, Universidad de Buenos Aires (75.43)}\\[2cm]
+
+    {\large \textbf{Integrantes:}}\\[0.5cm]
+    {\large Daniel Agustin Marianetti - 106256}\\
+    {\large Lautaro Leonel Pedrozo - 110146}\\
+    {\large Patricio Perrone - 98230}\\
+    {\large Ezequiel Lazarte - 108063}\\[3cm]
+
+    {\large Fecha de entrega: 8 de mayo de 2025}
+\end{titlepage}
+
+% Índice
+\tableofcontents
+\newpage
+
+\section{Introducción}
+El presente trabajo práctico tiene como objetivo fundamental la creación de una aplicación de red. Para alcanzar dicha finalidad, resulta indispensable comprender cómo se comunican los procesos a través de la red y analizar el modelo de servicio que la capa de transporte le ofrece a la capa de aplicación.
+
+El objetivo específico de este trabajo es la comprensión y la puesta en práctica de los conceptos y herramientas necesarias para la implementación de un protocolo de transferencia de datos confiable (RDT). Para lograrlo, se procederá a desarrollar una aplicación de arquitectura cliente-servidor orientada a la transferencia de archivos, contemplando las operaciones de \textbf{UPLOAD} (cliente a servidor) y \textbf{DOWNLOAD} (servidor a cliente).
+
+La implementación de esta aplicación se realizará utilizando el \textbf{lenguaje Python} y la \textbf{librería estándar de sockets}. La comunicación entre los procesos se establecerá sobre \textbf{UDP como protocolo de capa de transporte}. Para asegurar una transferencia confiable sobre UDP, se implementarán dos versiones del protocolo RDT: \textbf{Stop \& Wait} y \textbf{Selective Repeat}. Este desarrollo permitirá explorar los principios básicos de la transferencia de datos confiable y el uso de la interfaz de sockets.
+
+\section{Hipótesis y suposiciones realizadas}
+\begin{itemize}
+    \item El tamaño de mensajes enviados 1024 bytes
+    
+    \item Explicar diseño o elección de paquetes?
+    % Otros ítems de hipótesis/suposiciones irían aquí
+\end{itemize}
+
+\section{Implementación}
+Explicar la arquitectura de la aplicación, los componentes principales, y cómo se utiliza la interfaz de sockets. Detallar el protocolo de red implementado para cada operación requerida.
+
+\subsection{Mensajes/Segmentos}
+Esta subsección detalla la estructura de los diferentes tipos de segmentos que se intercambian entre el cliente y el servidor para implementar el protocolo de capa de aplicación requerido.
+
+\subsubsection{INIT}
+Este segmento se utiliza para \textbf{iniciar una operación de transferencia de archivos}. 
+Se define con la siguiente estructura:
+\begin{itemize}
+    \item \textbf{Header}: Tiene un tamaño fijo de 2 bytes.
+    \begin{itemize}
+        \item \textbf{Flags} (1 Byte):
+        \begin{itemize}
+        \item \textbf{PADDING} (6 bits)
+        \item \textbf{ACK} (1 bit)
+        \item \textbf{OPCODE:} Indica el tipo de operacion a realizar durante la conexión (UPLOAD o DOWNLOAD) (1 bit)
+        \item \textbf{PROTOCOL:} Indica el tipo de protocolo a utilizar durante la conexión (SW o SR) (1 bit)
+        \end{itemize}
+
+        \item \textbf{File name length:} Largo en bytes del nombre de archivo (1 Byte)
+    \end{itemize}
+    
+    \item \textbf{Payload}
+    \begin{itemize}
+        \item \textbf{File name:} UTF-8 string
+    \end{itemize}
+    
+    \item \textbf{Checksum CRC32} (4 Bytes)
+
+\end{itemize}
+
+\subsubsection{S\&W}
+El segmento \textbf{StopAndWaitSegment} (S\&W) se utiliza para la \textbf{transferencia de datos y el control} en el protocolo RDT \textbf{Stop \& Wait}. Se define con la siguiente estructura:
+\begin{itemize}
+    \item \textbf{Header}: Tiene un tamaño fijo de 3 bytes.
+    \begin{itemize}
+        \item \textbf{Flags} (1 Byte): Contiene flags empaquetados:
+        \begin{itemize}
+        \item \textbf{PADDING} (5 bits)
+        \item \textbf{SEQ Num:} Número de secuencia (1 bit, alternando entre 0 y 1).
+        \item \textbf{ACK:} (1 bit, alternando entre 0 y 1).
+        \item \textbf{EOF Num:} Indicador de fin de archivo (1 bit).
+        \end{itemize}
+        \item \textbf{Payload Length} (2 Bytes): Longitud en bytes del campo `payload`.
+    \end{itemize}
+    \item \textbf{Payload} (0 - 1017 Bytes)
+    \item \textbf{Checksum CRC32} (4 Bytes)
+\end{itemize}
+El tamaño mínimo total de un segmento S\&W serializado (sin payload) es de 1 (header) + 2 (len payload) + 0 (payload) + 4 (CRC) = 7 bytes.
+
+\subsubsection{SR}
+El segmento \textbf{SelectiveRepeatSegment} (SR) se destina a la \textbf{transferencia de datos y el control} en el protocolo RDT \textbf{Selective Repeat}. Se define con la siguiente estructura:
+\begin{itemize}
+    \item \textbf{Header}:
+    \begin{itemize}
+        \item \textbf{SEQ Num} (2 Bytes): Número de secuencia. Permite un espacio de numeración más amplio para la ventana deslizante.
+        \item \textbf{ACK Num} (2 Bytes)
+        \item \textbf{Win Size} (2 Bytes): Tamaño de la ventana del receptor.
+        \item \textbf{Payload Length} (2 Bytes): Longitud en bytes del campo `payload`.
+    \end{itemize}
+    \item \textbf{Payload}
+    
+    \item \textbf{Checksum CRC32} (4 Bytes)
+\end{itemize}
+El tamaño mínimo total de un segmento SR serializado (sin payload) es de 2 (seq) + 2 (ack) + 2 (win) + 2 (len payload) + 0 (payload) + 4 (CRC) = 12 bytes.
+
+\subsection{Handshake?}
+?
+
+\subsection{Stop \& Wait}
+Explicar funcionamiento, arquitectura.
+
+\subsection{Selective Repeat}
+Explicar funcionamiento, arquitectura.
+
+\subsection{Servidor}
+Explicar funcionamiento, arquitectura.
+
+\section{Pruebas}
+Presentar las pruebas realizadas: capturas de ejecución del cliente, logs del servidor y resultados obtenidos. Imágenes de wireshark etc.
+
+\section{Preguntas a responder}
+\subsection{Describa la arquitectura Cliente-Servidor}
+\subsection{¿Cuál es la función de un protocolo de capa de aplicación?}
+\subsection{Detalle el protocolo de aplicación desarrollado en este trabajo}
+\subsection{La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?}
+
+
+\section{Dificultades encontradas}
+?
+
+\section{Conclusión}
+?
+
+
+\end{document}
