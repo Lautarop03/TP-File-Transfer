@@ -30,7 +30,7 @@ class StopAndWait:
 
             self.socket.sendto(serialized_packet, self.destination_address)
 
-            print(f"expect_ack: {expect_ack}")
+            # print(f"expect_ack: {expect_ack}")
             if expect_ack:
                 # Wait for ACK from queue instead of socket
                 try:
@@ -43,7 +43,7 @@ class StopAndWait:
 
                     ack_packet = StopAndWaitSegment.deserialize(ack_packet)
 
-                    print(f"ack_packet.ack_num: {ack_packet.ack_num},"
+                    print(f"On send:received ack_num: {ack_packet.ack_num},"
                           f" self.seq: {self.seq}")
 
                     if ack_packet.ack_num == self.seq:
@@ -57,11 +57,13 @@ class StopAndWait:
                         print(
                             "[StopAndWaitW] Duplicate or corrupt package:"
                             f"{ack_packet}")
+                    print(f"On send: ending self.seq: {self.seq}")
 
                 except Empty:
                     print("[StopAndWait] Timeout waiting for ACK")  # Debug
             else:
                 self.seq = 1 - self.seq
+                print(f"On send: Not expecting ack, ending self.seq: {self.seq}")
                 return
             self.send_attempts += 1
 
@@ -82,8 +84,9 @@ class StopAndWait:
         Receive sw package and deserializes, return bytes for ack
         """
         deserialized_data = StopAndWaitSegment.deserialize(serialized_data)
+        print(f"SW payload received: {deserialized_data.payload}")
 
-        print(f"seq_num: {deserialized_data.seq_num},"
+        print(f"Starting unpack: Received seq_num: {deserialized_data.seq_num},"
               f" ack: {self.ack}")
 
         if deserialized_data.seq_num == self.ack:
@@ -112,6 +115,9 @@ class StopAndWait:
         # raise PacketDuplicateOrCorrupted(
         #     f"Expected: {self.ack}, Received: {packet.seq_num}"
         # )
+
+        print(f"Ending unpack: Received seq_num: {deserialized_data.seq_num},"
+              f" ack: {self.ack}")
 
         return (is_repeated, deserialized_data, ack_bytes)
 
@@ -147,7 +153,6 @@ class StopAndWait:
                 is_eof = True
 
             if self.verbose:
-                print(f"sw payload received: {data.payload}")
                 print(f"sw ACK bytes: {ack_bytes}")
             if not self.quiet:
                 print(f"Sending sw ACK to: {self.destination_address}")

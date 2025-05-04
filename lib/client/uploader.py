@@ -51,7 +51,7 @@ class Uploader():
                 # while file_size > 0:
                 # print("Start to read file")
                 data = self.file_manager.read(DATA_SIZE)
-                print(f"Read file on data worker: {data}")
+                # print(f"Read file on data worker: {data}")
                 self.data_queue.put(data)
                 self.current_size_remaining -= len(data)
             # file_size -= len(data)
@@ -73,7 +73,7 @@ class Uploader():
             # print("protocol worker start")
             # while True:
             data = self.data_queue.get()
-            print(f"Protocol worker: {data}")
+            # print(f"Protocol worker: {data}")
             if data is None:
                 result_queue.put(True)
 
@@ -109,10 +109,10 @@ class Uploader():
             if not is_kickstart:
                 self.protocol_handler.put_ack_bytes(ack_bytes)
             expect_ack = not is_kickstart
-            print(f"expect_ack: {expect_ack}")
+            # print(f"expect_ack: {expect_ack}")
             self.start_workers(result_queue, expect_ack=expect_ack)
             result = result_queue.get()
-            print(f"Result: {result}")
+            # print(f"Result: {result}")
             return result
 
     def transfer_all_here(self, result_queue):

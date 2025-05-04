@@ -31,6 +31,7 @@ class Downloader():
 
     def data_worker(self):
         """Worker thread that writes received data to file"""
+        print(f"Data worker start, writing to: {self.file_manager.path}")
         try:
             self.file_manager.open()
 
@@ -91,13 +92,13 @@ class Downloader():
                 # self.socket.settimeout(None)  # Reset timeuot
                 print("Waiting for data on downloader")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                print(f"Received data on downloader: {data}")
+                print("Received data on downloader")
             except socket.timeout:
                 if not self.quiet:
                     print("[CLIENT] Waiting for server message...")
                 continue
-            if self.verbose:
-                print(f"Data: {data}")
+            # if self.verbose:
+            #     print(f"Data: {data}")
 
             self.start_workers(data, result_queue)
 

@@ -38,7 +38,7 @@ class InitSegment:
             print("[InitSegment] Header Byte:", bin(header_byte))
             print("[InitSegment] Name Length:", name_length)
             print("[InitSegment] CRC:", hex(crc))
-            print("[InitSegment] Serialized Packet:", final_packet)
+            # print("[InitSegment] Serialized Packet:", final_packet)
 
         return final_packet
 
@@ -96,10 +96,13 @@ class StopAndWaitSegment:
         final_packet = packet_to_crc + crc_bytes
 
         if verbose:
-            print("[StopAndWait] Header Byte:", bin(header_byte))
+            print(f"Serialized StopAndWaitSegment")
+            print("[StopAndWait] Seq:", self.seq_num)
+            print("[StopAndWait] Ack:", self.ack_num)
+            print("[StopAndWait] Eof:", self.eof_num)
             print("[StopAndWait] Payload Length:", len(self.payload))
             print("[StopAndWait] CRC:", hex(crc))
-            print("[StopAndWait] Serialized Packet:", final_packet)
+            # print("[StopAndWait] Serialized Packet:", final_packet)
 
         return final_packet
 
@@ -125,6 +128,13 @@ class StopAndWaitSegment:
         seq_num = (header_byte >> 2) & 0b1
         ack_num = (header_byte >> 1) & 0b1
         eof_num = header_byte & 0b1
+
+        print(f"De-serialized StopAndWaitSegment")
+        print("[StopAndWait] Seq:", seq_num)
+        print("[StopAndWait] Ack:", ack_num)
+        print("[StopAndWait] Eof:", eof_num)
+        print("[StopAndWait] Payload Length:", payload_len)
+        print("[StopAndWait] CRC:", hex(crc_received))
 
         return StopAndWaitSegment(payload, seq_num, ack_num, eof_num)
 
@@ -155,7 +165,7 @@ class SelectiveRepeatSegment:
                   self.ack_num, " Win:", self.win_size)
             print("[SelectiveRepeat] Payload Length:", len(self.payload))
             print("[SelectiveRepeat] CRC:", hex(crc))
-            print("[SelectiveRepeat] Serialized Packet:", final_packet)
+            # print("[SelectiveRepeat] Serialized Packet:", final_packet)
 
         return final_packet
 
