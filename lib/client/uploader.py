@@ -8,7 +8,7 @@ import threading
 
 from lib.utils.static import (
     get_protocol_from_args,
-    get_transfer_config_from_args,
+    # get_transfer_config_from_args,
     get_protocol_code_from_protocol_str)
 # , UPLOAD_OPERATION
 
@@ -22,16 +22,19 @@ class Uploader():
         if args.verbose:
             print(f"File {args.src} found for upload")
         self.is_download = False
-        self.config = get_transfer_config_from_args(args, args.name, args.src)
+        # self.config = get_transfer_config_from_args(
+        # args, args.name, args.src)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.transfer_complete = threading.Event()
-        destination_address = (args.host, args.port)
-        self.protocol_handler = get_protocol_from_args(args, self.socket,
-                                                       destination_address)
+        self.destination_address = (args.host, args.port)
+        self.protocol_handler = get_protocol_from_args(
+            args, self.socket, self.destination_address)
         self.data_queue = Queue()
         self.error = None
         self.op_code = UPLOAD_OPERATION
         self.protocol_code = get_protocol_code_from_protocol_str(args.protocol)
+        self.file_name = args.name  # solo lo usa el cliente en init
+        self.file_path = args.src
         self.file_manager = FileManager(args.src, READ_MODE)
         self.verbose = args.verbose
         self.quiet = args.quiet
@@ -77,13 +80,13 @@ class Uploader():
                     if data == EOF_MARKER:
                         # Send EOF packet
                         self.protocol_handler.send(b"", eof=1)
-                        if self.config.verbose:
+                        if self.verbose:
                             print("Upload complete")
                         break
                     self.protocol_handler.send(data)
 
                 except Exception as e:
-                    if self.config.verbose:
+                    if self.verbose:
                         print(f"Error sending data: {e}")
                     # For upload, we should stop on protocol errors
                     self.error = f"Protocol error: {str(e)}"
@@ -96,6 +99,11 @@ class Uploader():
             self.transfer_complete.set()
 
     def transfer(self, _):
+
+        # if is_client:
+        #     # lo que ya esta
+        # else:
+        #     # queue simulando socket?
         data_thread = threading.Thread(target=self.data_worker)
         protocol_thread = threading.Thread(target=self.protocol_worker)
 

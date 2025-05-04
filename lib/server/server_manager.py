@@ -3,7 +3,7 @@ import sys
 import threading
 from typing import Dict, Tuple
 
-from lib.utils.constants import BUFFER_SIZE
+from lib.utils.constants import BUFFER_SIZE, DOWNLOAD_OPERATION
 # from protocols.stop_and_wait import StopAndWait
 # TODO: Import when implemented
 # from protocols.selective_repeat import SelectiveRepeat
@@ -77,6 +77,9 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                     print(f"INIT_ACK bytes: {init_ack_bytes}")
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
+
+                if init_segment.opcode == DOWNLOAD_OPERATION:
+                    connectionInfo.operation_handler.transfer(None)
             else:
                 # entity opuesto a la op
                 if args.verbose:

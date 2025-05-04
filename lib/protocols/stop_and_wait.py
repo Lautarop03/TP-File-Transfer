@@ -49,12 +49,13 @@ class StopAndWait:
                     return
                 else:
                     # The ACK is not what I expect
+                    # Debug
                     print(
-                        f"[CLIENT] Duplicate or corrupt package: {ack_packet}"
-                    )  # Debug
+                        "[StopAndWaitW] Duplicate or corrupt package:"
+                        f"{ack_packet}")
 
             except socket.timeout:
-                print("[CLIENT] Timeout waiting for ACK")  # Debug
+                print("[StopAndWait] Timeout waiting for ACK")  # Debug
 
             self.send_attempts += 1
 

@@ -20,10 +20,14 @@ class ConnectionInfo:
                  socket, client_address, args):
 
         if init_segment.opcode == DOWNLOAD_OPERATION:
-            args.dst = init_segment.name
+            # args.dst = init_segment.name
+            args.name = ""
+            args.src = args.storage + '/' + init_segment.name.decode("utf-8")
+            args.host = client_address[0]
+            args.port = client_address[1]
             operation_handler = Uploader(args)
         else:
-            args.name = init_segment.name
+            args.name = ""
             args.dst = args.storage + '/' + init_segment.name.decode("utf-8")
             args.host = client_address[0]
             args.port = client_address[1]

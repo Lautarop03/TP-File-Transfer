@@ -55,18 +55,18 @@ def init_connection(operation) -> bool:
 
         # Create and send INIT message
         init_segment = InitSegment(operation.op_code, operation.protocol_code,
-                                   0b0, operation.config.file_name)
+                                   0b0, operation.file_name)
 
         init_message = init_segment.serialize(operation.verbose)
 
         if operation.verbose:
             print(f"Created init message with data: {init_message}")
             print("Trying to connect with server running on "
-                  f"{operation.config.server_address[0]}:"
-                  f"{operation.config.server_address[1]}")
+                  f"{operation.destination_address[0]}:"
+                  f"{operation.destination_address[1]}")
 
         operation.socket.sendto(
-            init_message, operation.config.server_address)
+            init_message, operation.destination_address)
 
         if not operation.quiet:
             print("Waiting for server response")

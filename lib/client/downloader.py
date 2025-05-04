@@ -4,7 +4,7 @@ import socket
 import threading
 from lib.utils.static import (
     get_protocol_from_args,
-    get_transfer_config_from_args,
+    # get_transfer_config_from_args,
     get_protocol_code_from_protocol_str)
 from ..utils.file_manager import FileManager
 from ..utils.constants import (
@@ -13,15 +13,18 @@ from ..utils.constants import (
 
 class Downloader():
     def __init__(self, args, is_client: bool):
-        self.config = get_transfer_config_from_args(args, args.name, args.dst)
+        # self.config = get_transfer_config_from_args(
+        # args, args.name, args.dst)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        destination_address = (args.host, args.port)
-        self.protocol_handler = get_protocol_from_args(args, self.socket,
-                                                       destination_address)
+        self.destination_address = (args.host, args.port)
+        self.protocol_handler = get_protocol_from_args(
+            args, self.socket, self.destination_address)
         self.data_queue = Queue()
         self.error = None
         self.op_code = DOWNLOAD_OPERATION
         self.protocol_code = get_protocol_code_from_protocol_str(args.protocol)
+        self.file_name = args.name  # solo lo usa el cliente en init
+        self.file_path = args.dst
         self.file_manager = FileManager(args.dst, APPEND_MODE)
         self.is_client = is_client
         self.is_download = True
@@ -64,7 +67,7 @@ class Downloader():
             if is_eof:
                 data = EOF_MARKER
                 if self.is_client:
-                    self.socket.sendto(b"FIN", self.config.server_address)
+                    self.socket.sendto(b"FIN", self.destination_address)
 
             self.data_queue.put(data)
             result_queue.put(is_eof)  # Siempre le mando, sino bloquea
@@ -84,7 +87,16 @@ class Downloader():
         is_finished = False
 
         while not is_finished:
-            data, _ = self.socket.recvfrom(BUFFER_SIZE)
+            try:
+                # Receive data
+                # Al socket le quedo el time out que se uso en init
+                # self.socket.settimeout(None)  # Reset timeuot
+                data, _ = self.socket.recvfrom(BUFFER_SIZE)
+            except socket.timeout:
+                if not self.quiet:
+                    print("[CLIENT] Waiting for server message...")
+                continue
+            print("i've data!!!!")
 
             self.start_workers(data, result_queue)
 
