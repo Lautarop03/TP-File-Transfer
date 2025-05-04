@@ -67,32 +67,33 @@ class Uploader():
         #     if self.file_manager:
         #         self.file_manager.close()
 
-    def protocol_worker(self, result_queue, expect_ack = True):
+    def protocol_worker(self, result_queue, expect_ack=True):
         """Worker thread that handles protocol and sends data"""
         try:
             # print("protocol worker start")
             # while True:
-                data = self.data_queue.get()
-                print(f"Protocol worker: {data}")
-                if data is None:
-                    result_queue.put(True)
-                
-                try:
-                    if data == EOF_MARKER:
-                        # Send EOF packet
-                        self.protocol_handler.send(b"", eof=1, expect_ack=expect_ack)
-                        if self.verbose:
-                            print("Upload complete")
-                        result_queue.put(True)
-                    self.protocol_handler.send(data, eof=0, expect_ack=expect_ack)
-                    result_queue.put(False)
+            data = self.data_queue.get()
+            print(f"Protocol worker: {data}")
+            if data is None:
+                result_queue.put(True)
 
-                except Exception as e:
+            try:
+                if data == EOF_MARKER:
+                    # Send EOF packet
+                    self.protocol_handler.send(
+                        b"", eof=1, expect_ack=expect_ack)
                     if self.verbose:
-                        print(f"Error sending data: {e}")
-                    # For upload, we should stop on protocol errors
-                    self.error = f"Protocol error: {str(e)}"
+                        print("Upload complete")
                     result_queue.put(True)
+                self.protocol_handler.send(data, eof=0, expect_ack=expect_ack)
+                result_queue.put(False)
+
+            except Exception as e:
+                if self.verbose:
+                    print(f"Error sending data: {e}")
+                # For upload, we should stop on protocol errors
+                self.error = f"Protocol error: {str(e)}"
+                result_queue.put(True)
 
         except Exception as e:
             self.error = f"Protocol error: {str(e)}"
@@ -136,14 +137,14 @@ class Uploader():
             print("i've data!!!!")
 
             is_finished = result_queue.get()
-        
+
         print("Transfer all here finished")
         self.file_manager.close()
         self.socket.sendto(b"FIN", self.destination_address)
         print("Sent FIN")
         self.socket.close()
 
-    def start_workers(self, result_queue, expect_ack = True):
+    def start_workers(self, result_queue, expect_ack=True):
         data_thread = threading.Thread(target=self.data_worker)
         protocol_thread = threading.Thread(target=self.protocol_worker,
                                            args=(result_queue, expect_ack))

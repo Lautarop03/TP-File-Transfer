@@ -102,7 +102,7 @@ class Downloader():
             self.start_workers(data, result_queue)
 
             is_finished = result_queue.get()
-        
+
         print("Transfer all here finished")
         self.file_manager.close()
         self.socket.sendto(b"FIN", self.destination_address)

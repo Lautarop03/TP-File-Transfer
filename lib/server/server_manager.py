@@ -31,8 +31,10 @@ def process_message(data: bytes, client_address: Tuple[str, int],
             # Remove client from connections
             with client_connections_lock:
                 if client_address in client_connections:
-                    client_connections[client_address].operation_handler.close_file_manager()
-                    client_connections[client_address].protocol_handler.socket.close()
+                    client_connections[
+                        client_address].operation_handler.close_file_manager()
+                    client_connections[
+                        client_address].protocol_handler.socket.close()
                     del client_connections[client_address]
             return
 
@@ -74,8 +76,8 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 # entity opuesto a la op
                 if args.verbose:
                     print("Is existing client")
-                finished = client_connections[client_address].operation_handler.transfer(
-                    data)
+                finished = client_connections[
+                    client_address].operation_handler.transfer(data)
                 client_connections[client_address].set_finished(finished)
 
     except Exception as e:
