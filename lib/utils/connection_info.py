@@ -2,8 +2,7 @@ from dataclasses import dataclass
 
 from lib.client.downloader import Downloader
 from lib.client.uploader import Uploader
-from lib.protocols.stop_and_wait import StopAndWait
-from lib.utils.constants import DOWNLOAD_OPERATION, STOP_AND_WAIT
+from lib.utils.constants import DOWNLOAD_OPERATION
 from lib.utils.segments import InitSegment
 
 

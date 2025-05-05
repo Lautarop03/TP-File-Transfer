@@ -97,13 +97,15 @@ class Downloader():
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
                 print("Received data on downloader")
                 self.protocol_handler.put_bytes(data)
-                timeout_counter = 0  # Reset timeout counter on successful receive
+                # Reset timeout counter on successful receive
+                timeout_counter = 0
             except socket.timeout:
                 timeout_counter += 1
                 if timeout_counter >= MAX_ATTEMPTS:
                     print("[CLIENT] Error: Maximum number of timeouts "
                           f"({MAX_ATTEMPTS}) reached. Aborting transfer.")
-                    self.error = f"Connection timeout after {MAX_ATTEMPTS} attempts"
+                    e = f"Connection timeout after {MAX_ATTEMPTS} attempts"
+                    self.error = e
                     break
                 if not self.quiet:
                     print("[CLIENT] Timeout waiting for server message..."

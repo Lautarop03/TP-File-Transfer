@@ -31,18 +31,19 @@ def process_message(data: bytes, client_address: Tuple[str, int],
             # Remove client from connections
             with client_connections_lock:
                 if client_address in client_connections:
-                    client_connections[client_address].operation_handler.close_file_manager()
-                    # client_connections[client_address].operation_handler.protocol_handler.socket.close()
+                    client_connections[
+                        client_address].operation_handler.close_file_manager()
                     del client_connections[client_address]
             return
 
         # print("previous to client_connections lock")
         # Check if this is a new client (INIT message)
-        
+
             # print("inside client_connections lock")
         if client_address not in client_connections:
             with client_connections_lock:
                 init_segment = InitSegment.deserialize(data, args.verbose)
+                client_opcode = init_segment.opcode
 
                 if args.verbose:
                     print("Successfully deserialized init segment")
@@ -52,8 +53,8 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 connectionInfo.lock = threading.Lock()
                 client_connections[client_address] = connectionInfo
 
-                init_ack = InitSegment(init_segment.opcode,
-                                    init_segment.protocol, 0b1, "")
+                init_ack = InitSegment(client_opcode,
+                                       init_segment.protocol, 0b1, "")
 
                 init_ack_bytes = init_ack.serialize(args.verbose)
 
@@ -65,7 +66,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
 
-                needs_initial_upload = init_segment.opcode == DOWNLOAD_OPERATION
+                needs_initial_upload = client_opcode == DOWNLOAD_OPERATION
 
                 # Needed initiation for server upload operation
             if needs_initial_upload:
@@ -73,7 +74,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
         else:
             connectionInfo = client_connections[client_address]
             connectionInfo.operation_handler.protocol_handler.put_bytes(data)
-            
+
             with connectionInfo.lock:
                 if args.verbose:
                     print("Is existing client")
@@ -81,7 +82,8 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                     print("Already finished transfer with client")
                     return
 
-                finished = connectionInfo.operation_handler.transfer(is_client=False)
+                finished = connectionInfo.operation_handler.transfer(
+                    is_client=False)
                 connectionInfo.set_finished(finished)
         # print("release client_connections lock")
 

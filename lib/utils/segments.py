@@ -96,7 +96,7 @@ class StopAndWaitSegment:
         final_packet = packet_to_crc + crc_bytes
 
         if verbose:
-            print(f"Serialized StopAndWaitSegment")
+            print("Serialized StopAndWaitSegment")
             print("[StopAndWait] Seq:", self.seq_num)
             print("[StopAndWait] Ack:", self.ack_num)
             print("[StopAndWait] Eof:", self.eof_num)
@@ -129,7 +129,7 @@ class StopAndWaitSegment:
         ack_num = (header_byte >> 1) & 0b1
         eof_num = header_byte & 0b1
 
-        print(f"De-serialized StopAndWaitSegment")
+        print("De-serialized StopAndWaitSegment")
         print("[StopAndWait] Seq:", seq_num)
         print("[StopAndWait] Ack:", ack_num)
         print("[StopAndWait] Eof:", eof_num)
