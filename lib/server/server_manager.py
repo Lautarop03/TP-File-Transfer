@@ -49,7 +49,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
 
                 connectionInfo = ConnectionInfo(init_segment, server_socket,
                                                 client_address, args)
-
+                connectionInfo.lock = threading.Lock()
                 client_connections[client_address] = connectionInfo
 
                 init_ack = InitSegment(init_segment.opcode,
@@ -73,7 +73,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
         else:
             connectionInfo = client_connections[client_address]
             connectionInfo.operation_handler.protocol_handler.put_bytes(data)
-            connectionInfo.lock = threading.Lock()
+            
             with connectionInfo.lock:
                 if args.verbose:
                     print("Is existing client")

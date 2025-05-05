@@ -8,7 +8,8 @@ from lib.utils.static import (
     get_protocol_code_from_protocol_str)
 from ..utils.file_manager import FileManager
 from ..utils.constants import (
-    APPEND_MODE, BUFFER_SIZE, DOWNLOAD_OPERATION, EOF_MARKER)
+    APPEND_MODE, BUFFER_SIZE, DOWNLOAD_OPERATION,
+    EOF_MARKER, MAX_ATTEMPTS)
 
 
 class Downloader():
@@ -79,30 +80,35 @@ class Downloader():
 
     def transfer(self, is_client=True):
         if is_client:
-            self.transfer_all_here()
+            self.transfer_for_client()
         else:
             self.start_workers(queue.Queue())
 
-    def transfer_all_here(self):
+    def transfer_for_client(self):
         result_queue = queue.Queue()
         is_finished = False
+        timeout_counter = 0
 
-        print("[DWONLOADER] Transfer all here started")
         while not is_finished:
             try:
                 # Receive data
                 # Al socket le quedo el time out que se uso en init
-                # self.socket.settimeout(None)  # Reset timeuot
                 print("Waiting for data on downloader")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
                 print("Received data on downloader")
                 self.protocol_handler.put_bytes(data)
+                timeout_counter = 0  # Reset timeout counter on successful receive
             except socket.timeout:
+                timeout_counter += 1
+                if timeout_counter >= MAX_ATTEMPTS:
+                    print("[CLIENT] Error: Maximum number of timeouts "
+                          f"({MAX_ATTEMPTS}) reached. Aborting transfer.")
+                    self.error = f"Connection timeout after {MAX_ATTEMPTS} attempts"
+                    break
                 if not self.quiet:
-                    print("[CLIENT] Timeout waiting for server message...")
+                    print("[CLIENT] Timeout waiting for server message..."
+                          f" ({timeout_counter}/{MAX_ATTEMPTS})")
                 continue
-            # if self.verbose:
-            #     print(f"Data: {data}")
 
             self.start_workers(result_queue)
 
