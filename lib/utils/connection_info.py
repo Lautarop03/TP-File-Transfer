@@ -10,7 +10,7 @@ from lib.utils.segments import InitSegment
 @dataclass
 class ConnectionInfo:
     operation_handler: object  # Downloader or Uploader
-    protocol: str     # "sw" for Stop & Wait, "sr" for Selective Repeat
+    protocol: str     # "SW" for Stop & Wait, "sr" for Selective Repeat
     file_path: str    # For upload: filename to create,
     protocol_handler: object  # StopAndWait or SelectiveRepeat instance
     finished: bool = False
@@ -36,11 +36,6 @@ class ConnectionInfo:
 
         self.operation_handler = operation_handler
         self.file_path = init_segment.name.decode("utf-8")
-        if init_segment.protocol == STOP_AND_WAIT:
-            self.protocol_handler = StopAndWait(socket, client_address,
-                                                args.verbose, args.quiet)
-        else:
-            self.protocol_handler = None
 
     def set_finished(self, finished):
         self.finished = finished

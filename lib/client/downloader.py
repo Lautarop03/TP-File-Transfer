@@ -48,25 +48,27 @@ class Downloader():
 
         except Exception as e:
             self.error = f"Error writing file: {str(e)}"
-        finally:
-            if self.file_manager:
-                self.file_manager.close()
+        # finally:
+        #     if self.file_manager:
+        #         self.file_manager.close()
 
-    def protocol_worker(self, data_bytes, result_queue):
+    def protocol_worker(self, result_queue):
         """
         Worker thread that handles protocol and receives data
         """
         try:
+            # print("protocol worker")
+            data_bytes = self.protocol_handler.communication_queue.get()
             data, is_repeated, is_eof = self.protocol_handler.receive_file(
                 data_bytes)
 
             if is_repeated:
                 self.data_queue.put(None)
 
-            if is_eof:
-                data = EOF_MARKER
-                if self.is_client:
-                    self.socket.sendto(b"FIN", self.destination_address)
+            # if is_eof:
+            #     data = EOF_MARKER
+            #     if self.is_client:
+            #         self.socket.sendto(b"FIN", self.destination_address)
 
             self.data_queue.put(data)
             result_queue.put(is_eof)  # Siempre le mando, sino bloquea
@@ -75,16 +77,17 @@ class Downloader():
             self.error = f"Protocol error: {str(e)}"
             self.data_queue.put(None)  # Signal data worker to stop
 
-    def transfer(self, data=None):
-        if data is None:
+    def transfer(self, is_client=True):
+        if is_client:
             self.transfer_all_here()
         else:
-            self.start_workers(data, queue.Queue())
+            self.start_workers(queue.Queue())
 
     def transfer_all_here(self):
         result_queue = queue.Queue()
         is_finished = False
 
+        print("[DWONLOADER] Transfer all here started")
         while not is_finished:
             try:
                 # Receive data
@@ -93,14 +96,15 @@ class Downloader():
                 print("Waiting for data on downloader")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
                 print("Received data on downloader")
+                self.protocol_handler.put_bytes(data)
             except socket.timeout:
                 if not self.quiet:
-                    print("[CLIENT] Waiting for server message...")
+                    print("[CLIENT] Timeout waiting for server message...")
                 continue
             # if self.verbose:
             #     print(f"Data: {data}")
 
-            self.start_workers(data, result_queue)
+            self.start_workers(result_queue)
 
             is_finished = result_queue.get()
 
@@ -110,10 +114,10 @@ class Downloader():
         print("Sent FIN")
         self.socket.close()
 
-    def start_workers(self, data, result_queue):
+    def start_workers(self, result_queue):
         data_thread = threading.Thread(target=self.data_worker)
         protocol_thread = threading.Thread(target=self.protocol_worker,
-                                           args=(data, result_queue))
+                                           args=(result_queue,))
 
         data_thread.daemon = True
         protocol_thread.daemon = True

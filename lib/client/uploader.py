@@ -28,7 +28,6 @@ class Uploader():
         self.protocol_handler = get_protocol_from_args(
             args, self.socket, self.destination_address)
         self.data_queue = Queue()
-        self.ack_queue = Queue()
         self.error = None
         self.op_code = UPLOAD_OPERATION
         self.protocol_code = get_protocol_code_from_protocol_str(args.protocol)
@@ -67,7 +66,7 @@ class Uploader():
         #     if self.file_manager:
         #         self.file_manager.close()
 
-    def protocol_worker(self, result_queue, expect_ack=True):
+    def protocol_worker(self, result_queue):
         """Worker thread that handles protocol and sends data"""
         try:
             # print("protocol worker start")
@@ -81,13 +80,13 @@ class Uploader():
                 if data is EOF_MARKER:
                     # Send EOF packet
                     self.protocol_handler.send(
-                        b"", eof=1, expect_ack=expect_ack)
+                        b"", eof=1)
                     if self.verbose:
                         print("Upload complete")
                     result_queue.put(True)
                 else:
                     self.protocol_handler.send(
-                        data, eof=0, expect_ack=expect_ack)
+                        data, eof=0)
                     result_queue.put(False)
 
             except Exception as e:
@@ -101,16 +100,13 @@ class Uploader():
             self.error = f"Protocol error: {str(e)}"
             raise e
 
-    def transfer(self, ack_bytes=None, is_kickstart=False):
+    def transfer(self, is_client=True):
         result_queue = queue.Queue()
-        if ack_bytes is None:
+        if is_client:
             self.transfer_all_here(result_queue)
         else:
-            if not is_kickstart:
-                self.protocol_handler.put_ack_bytes(ack_bytes)
-            expect_ack = not is_kickstart
-            # print(f"expect_ack: {expect_ack}")
-            self.start_workers(result_queue, expect_ack=expect_ack)
+
+            self.start_workers(result_queue)
             result = result_queue.get()
             # print(f"Result: {result}")
             return result
@@ -130,8 +126,8 @@ class Uploader():
                 # self.socket.settimeout(None)  # Reset timeuot
                 print("Waiting for data")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
+                self.protocol_handler.put_bytes(data)
                 print(f"Received data: {data}")
-                self.protocol_handler.put_ack_bytes(data)
             except socket.timeout:
                 if not self.quiet:
                     print("[CLIENT] Waiting for server message...")
@@ -146,10 +142,10 @@ class Uploader():
         print("Sent FIN")
         self.socket.close()
 
-    def start_workers(self, result_queue, expect_ack=True):
+    def start_workers(self, result_queue):
         data_thread = threading.Thread(target=self.data_worker)
         protocol_thread = threading.Thread(target=self.protocol_worker,
-                                           args=(result_queue, expect_ack))
+                                           args=(result_queue, ))
 
         data_thread.daemon = True
         protocol_thread.daemon = True
