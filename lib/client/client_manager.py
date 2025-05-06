@@ -1,3 +1,4 @@
+import time
 from lib.utils.segments import InitSegment
 from ..utils.constants import BUFFER_SIZE
 
@@ -5,6 +6,8 @@ from ..utils.constants import BUFFER_SIZE
 def run(operation):
     """Create and run appropriate client based on operation
     type and arguments"""
+
+    start_time = time.time()
 
     try:
         # Initialize connection
@@ -17,27 +20,7 @@ def run(operation):
         if not operation.quiet:
             print("\nStarting transfer")
 
-        # if operation.is_download:
-        #     is_finished = False
-        #     # Start transfer
-        #     while not is_finished:
-        #         data, _ = operation.socket.recvfrom(BUFFER_SIZE)
-        #         # Start transfer
-        #         is_finished = operation.transfer(data)
-        # else:
-        #     operation.transfer("")
-
         operation.transfer(is_client=True)
-
-        # if not success:
-        #     print("Transfer failed, shut down")
-        #     if not operation.quiet:
-        #         print(f"Error: {error}")
-
-        # elif not operation.quiet:
-        #     print("Successfully transferred file")
-
-        # return 0 if success else 1
 
         return 0
 
@@ -45,6 +28,11 @@ def run(operation):
         if not operation.quiet:
             print(f"Error: {e}")
         return 1
+
+    finally:
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Time elapsed: {elapsed_time:.2f} seconds")
 
 
 def init_connection(operation) -> bool:

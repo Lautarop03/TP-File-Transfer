@@ -16,7 +16,7 @@ class StopAndWait:
         self.verbose = verbose
         self.quiet = quiet
         self.communication_queue = Queue()  # Queue for receiving ACKs
-        self.waiting_ack = False
+        # self.waiting_ack = False
 
     def send(self, payload, eof=0):  # Send a single package
         SW_segment = StopAndWaitSegment(
@@ -33,7 +33,7 @@ class StopAndWait:
 
             try:
                 print("On send: before get from communication_queue")
-                self.waiting_ack = True
+                # self.waiting_ack = True
                 ack_packet = self.communication_queue.get(timeout=TIMEOUT)
                 print("On send: after get from communication_queue")
 
@@ -47,7 +47,7 @@ class StopAndWait:
                     # Package received successfully
                     self.send_attempts = 0
                     self.seq = 1 - self.seq
-                    self.waiting_ack = False
+                    # self.waiting_ack = False
                     return
                 else:
                     # The ACK is not what I expect

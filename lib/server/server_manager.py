@@ -69,15 +69,16 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 needs_initial_upload = client_opcode == DOWNLOAD_OPERATION
 
                 # Needed initiation for server upload operation
-            if needs_initial_upload:
-                connectionInfo.operation_handler.transfer(is_client=False)
+            with client_connections[client_address].lock:
+                if needs_initial_upload:
+                    connectionInfo.operation_handler.transfer(is_client=False)
         else:
             connectionInfo = client_connections[client_address]
             connectionInfo.operation_handler.protocol_handler.put_bytes(data)
 
             protocol = connectionInfo.operation_handler.protocol_handler
-            while protocol.waiting_ack:
-                continue
+            # while protocol.waiting_ack:
+            #     continue
 
             with connectionInfo.lock:
                 if args.verbose:

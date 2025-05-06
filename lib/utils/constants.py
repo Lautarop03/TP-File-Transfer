@@ -1,10 +1,10 @@
-BUFFER_SIZE = 1024  # Buffer size for receiving/sending data
+BUFFER_SIZE = 2041  # Buffer size for receiving/sending data
 HEADER_SIZE = (
     7  # Packet header size, 1 flags, 2 length payload, 4 checksum
 )
 DATA_SIZE = BUFFER_SIZE - HEADER_SIZE  # Maximum packet data size
 
-TIMEOUT = 5  # Timeout to receive an ACK
+TIMEOUT = 1  # Timeout to receive an ACK
 
 APPEND_MODE = "ab"  # Append mode for binary files
 
