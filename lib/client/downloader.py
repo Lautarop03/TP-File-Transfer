@@ -42,7 +42,7 @@ class Downloader():
             while True:
                 data = self.data_queue.get()
                 if data is None:  # Signal to stop
-                    break
+                    continue
 
                 if data == EOF_MARKER:
                     print("Download complete")
