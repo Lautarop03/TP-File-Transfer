@@ -41,7 +41,7 @@ class Downloader():
 
             while True:
                 data = self.data_queue.get()
-                if data is None:  # Signal to stop
+                if data is None:  # Signal to ignore
                     continue
 
                 if data == EOF_MARKER:
@@ -73,8 +73,9 @@ class Downloader():
             #     data = EOF_MARKER
             #     if self.is_client:
             #         self.socket.sendto(b"FIN", self.destination_address)
+            else:
+                self.data_queue.put(data)
 
-            self.data_queue.put(data)
             result_queue.put(is_eof)  # Siempre le mando, sino bloquea
 
         except Exception as e:
