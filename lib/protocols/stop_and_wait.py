@@ -16,6 +16,7 @@ class StopAndWait:
         self.verbose = verbose
         self.quiet = quiet
         self.communication_queue = Queue()  # Queue for receiving ACKs
+        self.waiting_ack = False
 
     def send(self, payload, eof=0):  # Send a single package
         SW_segment = StopAndWaitSegment(
@@ -32,6 +33,7 @@ class StopAndWait:
 
             try:
                 print("On send: before get from communication_queue")
+                self.waiting_ack = True
                 ack_packet = self.communication_queue.get(timeout=TIMEOUT)
                 print("On send: after get from communication_queue")
 
@@ -39,11 +41,13 @@ class StopAndWait:
                     print(f"Received ACK for SW. Bytes: {ack_packet}")
 
                 ack_packet = StopAndWaitSegment.deserialize(ack_packet)
-
+                print(f"recibo ack: {ack_packet.ack_num}"
+                      f" y mande seq: {self.seq}")
                 if ack_packet.ack_num == self.seq:
                     # Package received successfully
                     self.send_attempts = 0
                     self.seq = 1 - self.seq
+                    self.waiting_ack = False
                     return
                 else:
                     # The ACK is not what I expect
@@ -82,23 +86,23 @@ class StopAndWait:
             is_repeated = False
 
             # self.socket.sendto(serialized_ack, address)
-            new_ack_num = self.ack
             self.ack = 1 - self.ack
+            new_ack_num = self.ack
 
         else:
             # Duplicate or out-of-order packet
             if not self.quiet:
-                print("[SERVER] Duplicate or corrupt"
+                print("Duplicate or corrupt"
                       f"package: {deserialized_data}")
             new_ack_num = 1 - self.ack
             is_repeated = True
             # send the last ACK I received
+            ack_packet = StopAndWaitSegment(ack_num=new_ack_num)
 
-        ack_packet = StopAndWaitSegment(ack_num=new_ack_num)
         ack_bytes = ack_packet.serialize()
 
         print(f"Ending unpack: Received seq_num: {deserialized_data.seq_num},"
-              f" ack: {self.ack}")
+              f" ack: {new_ack_num}")
 
         return (is_repeated, deserialized_data, ack_bytes)
 

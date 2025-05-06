@@ -130,11 +130,11 @@ class StopAndWaitSegment:
         eof_num = header_byte & 0b1
 
         print("De-serialized StopAndWaitSegment")
-        print("[StopAndWait] Seq:", seq_num)
-        print("[StopAndWait] Ack:", ack_num)
-        print("[StopAndWait] Eof:", eof_num)
-        print("[StopAndWait] Payload Length:", payload_len)
-        print("[StopAndWait] CRC:", hex(crc_received))
+        print("[StopAndWait DEs] Seq:", seq_num)
+        print("[StopAndWait DEs] Ack:", ack_num)
+        print("[StopAndWait DEs] Eof:", eof_num)
+        print("[StopAndWait DEs] Payload Length:", payload_len)
+        print("[StopAndWait DEs] CRC:", hex(crc_received))
 
         return StopAndWaitSegment(payload, seq_num, ack_num, eof_num)
 
