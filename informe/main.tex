@@ -129,9 +129,56 @@ Presentar las pruebas realizadas: capturas de ejecución del cliente, logs del s
 
 \section{Preguntas a responder}
 \subsection{Describa la arquitectura Cliente-Servidor}
+La arquitectura Cliente-Servidor es un modelo de comunicación donde dos entidades principales interactúan: el cliente, que solicita servicios, y el servidor que los proporciona.
+
+El cliente es el componente que inicia la comunicación. Su función es enviar solicitudes al servidor y recibir las respuestas adecuadas.
+
+Por otro lado, el servidor gestiona y almacena los recursos solicitados, como bases de datos, archivos o aplicaciones. Este es quien escucha las solicitudes del cliente, las procesa y responde con la información solicitada.
+
+La comunicación entre cliente y servidor se realiza mediante protocolos de red, siendo TCP/IP el más utilizado. Este conjunto garantiza que los datos lleguen de forma segura y ordenada. En entornos web, también se emplean protocolos como HTTP o HTTPS.
+
 \subsection{¿Cuál es la función de un protocolo de capa de aplicación?}
+La función de la capa de aplicación es permitir una comunicación eficaz y segura entre diferentes programas de aplicación dentro de una red. Para lograrlo, se utilizan protocolos específicos que definen cómo deben formatearse, enviarse, recibirse e interpretarse los mensajes entre aplicaciones.
+
+Un protocolo de capa de aplicación establece las reglas que permiten que dos programas puedan intercambiar información correctamente, aunque estén en dispositivos distintos y en redes diferentes.
+
+Además de facilitar la comunicación, estos protocolos aseguran que los datos lleguen de forma comprensible y estructurada.
+
 \subsection{Detalle el protocolo de aplicación desarrollado en este trabajo}
+Se explica en la sección de Implementación.
+
 \subsection{La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?}
+
+\subsection*{TCP (Transmission Control Protocol)}
+
+\begin{itemize}
+    \item Proporciona una conexión confiable.
+    \item Asegura la entrega completa, ordenada y sin duplicados de los datos.
+    \item Realiza control de flujo y de congestión.
+    \item Requiere el establecimiento de una conexión (handshake de tres pasos).
+\end{itemize}
+
+\textbf{Cuándo se utiliza:} cuando se necesita alta fiabilidad, como en:
+\begin{itemize}
+    \item Navegación web (HTTP/HTTPS)
+    \item Transferencia de archivos (FTP)
+    \item Correo electrónico
+\end{itemize}
+
+\subsection*{UDP (User Datagram Protocol)}
+
+\begin{itemize}
+    \item No orientado a la conexión (no requiere handshake).
+    \item No garantiza entrega ni orden.
+    \item Tiene menor sobrecarga y mayor velocidad que TCP.
+    \item No realiza control de flujo ni de congestión.
+\end{itemize}
+
+\textbf{Cuándo se utiliza:} cuando se prioriza la velocidad sobre la fiabilidad, como en:
+\begin{itemize}
+    \item Video llamadas y streaming en vivo
+    \item Consultas DNS
+\end{itemize}
 
 
 \section{Dificultades encontradas}
