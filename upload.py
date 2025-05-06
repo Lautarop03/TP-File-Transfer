@@ -1,6 +1,7 @@
 import argparse
 from lib.client.client_manager import run
-from lib.utils.constants import UPLOAD_OPERATION
+from lib.client.uploader import Uploader
+# from lib.utils.constants import UPLOAD_OPERATION
 
 
 def add_arguments(parser):
@@ -47,7 +48,17 @@ def main():
     )
     add_arguments(parser)
     args = parser.parse_args()
-    return run(args, UPLOAD_OPERATION)
+
+    if args.verbose:
+        print("=== Server Config ===")
+        print(f"Verbose      : {args.verbose}")
+        print(f"Quiet        : {args.quiet}")
+        print(f"Host         : {args.host}")
+        print(f"Port         : {args.port}")
+        print(f"Name         : {args.name}")
+        print(f"Protocol     : {args.protocol}")
+
+    return run(Uploader(args))
 
 
 if __name__ == "__main__":

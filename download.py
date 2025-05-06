@@ -1,6 +1,6 @@
 import argparse
 from lib.client.client_manager import run
-from lib.utils.constants import DOWNLOAD_OPERATION
+from lib.client.downloader import Downloader
 
 
 def add_arguments(parser):
@@ -47,7 +47,17 @@ def main():
     )
     add_arguments(parser)
     args = parser.parse_args()
-    return run(args, DOWNLOAD_OPERATION)
+
+    if args.verbose:
+        print("=== Server Config ===")
+        print(f"Verbose      : {args.verbose}")
+        print(f"Quiet        : {args.quiet}")
+        print(f"Host         : {args.host}")
+        print(f"Port         : {args.port}")
+        print(f"Destination  : {args.dst}")
+        print(f"Protocol     : {args.protocol}")
+
+    return run(Downloader(args, is_client=True))
 
 
 if __name__ == "__main__":

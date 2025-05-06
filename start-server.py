@@ -1,5 +1,5 @@
 import argparse
-from lib.server import start_server
+from lib.server import server_manager
 
 
 def add_arguments(parser):
@@ -41,7 +41,7 @@ def main():
     )
     add_arguments(parser)
     args = parser.parse_args()
-    start_server.run(args)
+    server_manager.run(args)
 
 
 if __name__ == '__main__':
