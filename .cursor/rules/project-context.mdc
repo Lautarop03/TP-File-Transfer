@@ -1,9 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-This is a university project, built with Python.
-This goal of the project is to create a FTP with a client that can connect to many servers and the communication is via UDP and UDP only.
-
-A requirement is to achieve some sort of reliable data transfer over UDP. The description of the task to be achieved is in the pdf in the root [tp_file_transfer_2c2025_SR.pdf](mdc:tp_file_transfer_2c2025_SR.pdf).

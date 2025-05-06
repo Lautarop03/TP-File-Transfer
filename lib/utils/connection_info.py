@@ -38,3 +38,6 @@ class ConnectionInfo:
 
     def set_finished(self, finished):
         self.finished = finished
+
+    def terminate(self):
+        self.operation_handler.terminate()

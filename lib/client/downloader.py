@@ -26,15 +26,18 @@ class Downloader():
         self.file_name = args.name  # solo lo usa el cliente en init
         self.file_path = args.dst
         self.file_manager = FileManager(args.dst, APPEND_MODE)
+        self.file_manager.open()
         self.is_client = is_client
         self.verbose = args.verbose
         self.quiet = args.quiet
+        self.data_worker_thread = threading.Thread(target=self.data_worker)
+        self.data_worker_thread.daemon = True
+        self.data_worker_thread.start()
 
     def data_worker(self):
         """Worker thread that writes received data to file"""
         print(f"Data worker start, writing to: {self.file_manager.path}")
         try:
-            self.file_manager.open()
 
             while True:
                 data = self.data_queue.get()
@@ -123,16 +126,13 @@ class Downloader():
         self.socket.close()
 
     def start_workers(self, result_queue):
-        data_thread = threading.Thread(target=self.data_worker)
         protocol_thread = threading.Thread(target=self.protocol_worker,
                                            args=(result_queue,))
 
-        data_thread.daemon = True
         protocol_thread.daemon = True
 
         protocol_thread.start()
-        data_thread.start()
 
-    def close_file_manager(self):
-        print("Closing file manager")
+    def terminate(self):
         self.file_manager.close()
+        self.data_worker_thread.join(timeout=1)

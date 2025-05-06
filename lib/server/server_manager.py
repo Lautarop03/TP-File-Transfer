@@ -32,7 +32,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
             with client_connections_lock:
                 if client_address in client_connections:
                     client_connections[
-                        client_address].operation_handler.close_file_manager()
+                        client_address].terminate()
                     del client_connections[client_address]
             return
 

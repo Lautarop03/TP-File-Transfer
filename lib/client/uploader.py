@@ -38,24 +38,23 @@ class Uploader():
         self.current_size_remaining = self.file_manager.file_size()
         self.verbose = args.verbose
         self.quiet = args.quiet
+        self.data_worker_thread = threading.Thread(target=self.data_worker)
+        self.data_worker_thread.daemon = True
+        self.data_worker_thread.start()
 
     def data_worker(self):
         """Worker thread that reads data from file"""
         print(f"Data worker start, reading from: {self.file_manager.path}")
         try:
-            # file_size = self.file_manager.file_size()
-            # print(f"Data worker, file size is: {file_size}")
 
-            if self.current_size_remaining > 0:
-                # while file_size > 0:
-                # print("Start to read file")
-                data = self.file_manager.read(DATA_SIZE)
-                # print(f"Read file on data worker: {data}")
-                self.data_queue.put(data)
-                self.current_size_remaining -= len(data)
-            # file_size -= len(data)
-            else:
-                self.data_queue.put(EOF_MARKER)
+            while True:
+                if self.current_size_remaining > 0:
+                    data = self.file_manager.read(DATA_SIZE)
+                    self.data_queue.put(data)
+                    self.current_size_remaining -= len(data)
+                else:
+                    self.data_queue.put(EOF_MARKER)
+                    break
 
         except Exception as e:
             error_msg = f"Error reading file: {str(e)}"
@@ -69,10 +68,8 @@ class Uploader():
     def protocol_worker(self, result_queue):
         """Worker thread that handles protocol and sends data"""
         try:
-            # print("protocol worker start")
-            # while True:
+
             data = self.data_queue.get()
-            # print(f"Protocol worker: {data}")
             if data is None:
                 result_queue.put(True)
 
@@ -124,16 +121,14 @@ class Uploader():
                 # Receive data
                 # Al socket le quedo el time out que se uso en init
                 # self.socket.settimeout(None)  # Reset timeuot
-                print("Waiting for data")
+                print("Waiting for message")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
                 self.protocol_handler.put_bytes(data)
                 print(f"Received data: {data}")
             except socket.timeout:
                 if not self.quiet:
-                    print("[CLIENT] Waiting for server message...")
+                    print("TIMEOUT while waiting for message on uploader...")
                 continue
-            print("i've data!!!!")
-
             is_finished = result_queue.get()
 
         print("Transfer all here finished")
@@ -143,15 +138,13 @@ class Uploader():
         self.socket.close()
 
     def start_workers(self, result_queue):
-        data_thread = threading.Thread(target=self.data_worker)
         protocol_thread = threading.Thread(target=self.protocol_worker,
                                            args=(result_queue, ))
 
-        data_thread.daemon = True
         protocol_thread.daemon = True
 
         protocol_thread.start()
-        data_thread.start()
 
-    def close_file_manager(self):
+    def terminate(self):
         self.file_manager.close()
+        self.data_worker_thread.join(timeout=1)

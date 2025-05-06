@@ -21,6 +21,7 @@ def run(operation):
             print("\nStarting transfer")
 
         operation.transfer(is_client=True)
+        operation.terminate()
 
         return 0
 
