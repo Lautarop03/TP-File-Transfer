@@ -141,28 +141,33 @@ class StopAndWaitSegment:
 
 class SelectiveRepeatSegment:
     def __init__(self, payload=b"", seq_num=0, ack_num=0,
-                 win_size=0):
+                 win_size=0, eof_num=0):
         self.payload = payload
         self.seq_num = seq_num & 0xFFFF
         self.ack_num = ack_num & 0xFFFF
         self.win_size = win_size & 0xFFFF
+        self.eof_num = eof_num & 0b1
 
     def serialize(self, verbose=False):
         payload_len_bytes = len(self.payload).to_bytes(2, byteorder="big")
         seq_num_bytes = self.seq_num.to_bytes(2, byteorder="big")
         ack_num_bytes = self.ack_num.to_bytes(2, byteorder="big")
         win_size_bytes = self.win_size.to_bytes(2, byteorder="big")
+        eof_byte = bytes([self.eof_num])
 
-        packet_to_crc = seq_num_bytes + ack_num_bytes + win_size_bytes
-        + payload_len_bytes + self.payload
+        packet_to_crc = (
+            eof_byte + seq_num_bytes + ack_num_bytes +
+            win_size_bytes + payload_len_bytes + self.payload
+        )
         crc = zlib.crc32(packet_to_crc) & 0xFFFFFFFF
         crc_bytes = crc.to_bytes(4, byteorder="big")
 
         final_packet = packet_to_crc + crc_bytes
 
         if verbose:
-            print("[SelectiveRepeat] Seq:", self.seq_num, " Ack:",
-                  self.ack_num, " Win:", self.win_size)
+            print("[SelectiveRepeat] Seq:", self.seq_num,
+                  " Ack:", self.ack_num, " Win:", self.win_size,
+                  " EOF:", self.eof_num)
             print("[SelectiveRepeat] Payload Length:", len(self.payload))
             print("[SelectiveRepeat] CRC:", hex(crc))
             # print("[SelectiveRepeat] Serialized Packet:", final_packet)
@@ -171,22 +176,24 @@ class SelectiveRepeatSegment:
 
     @staticmethod
     def deserialize(data) -> 'SelectiveRepeatSegment':
-        if len(data) < 12:
+        if len(data) < 13:
             raise ValueError("Packet too short")
 
-        seq_num = int.from_bytes(data[0:2], byteorder="big")
-        ack_num = int.from_bytes(data[2:4], byteorder="big")
-        win_size = int.from_bytes(data[4:6], byteorder="big")
-        payload_len = int.from_bytes(data[6:8], byteorder="big")
+        eof_num = data[0]
+        seq_num = int.from_bytes(data[1:3], byteorder="big")
+        ack_num = int.from_bytes(data[3:5], byteorder="big")
+        win_size = int.from_bytes(data[5:7], byteorder="big")
+        payload_len = int.from_bytes(data[7:9], byteorder="big")
 
-        if len(data) < (8 + payload_len + 4):
+        if len(data) < (9 + payload_len + 4):
             raise ValueError("Incomplete packet")
 
-        payload = data[8:8 + payload_len]
-        crc_received = int.from_bytes(data[8 + payload_len:], byteorder="big")
-        crc_calculated = zlib.crc32(data[:8 + payload_len]) & 0xFFFFFFFF
+        payload = data[9:9 + payload_len]
+        crc_received = int.from_bytes(data[9 + payload_len:], byteorder="big")
+        crc_calculated = zlib.crc32(data[:9 + payload_len]) & 0xFFFFFFFF
 
         if crc_calculated != crc_received:
             raise ValueError("CRC mismatch")
 
-        return SelectiveRepeatSegment(payload, seq_num, ack_num, win_size)
+        return SelectiveRepeatSegment(payload, seq_num,
+                                      ack_num, win_size, eof_num)

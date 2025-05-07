@@ -9,7 +9,7 @@ from lib.utils.segments import InitSegment
 @dataclass
 class ConnectionInfo:
     operation_handler: object  # Downloader or Uploader
-    protocol: str     # "SW" for Stop & Wait, "sr" for Selective Repeat
+    protocol: str     # "sw" for Stop & Wait, "sr" for Selective Repeat
     file_path: str    # For upload: filename to create,
     protocol_handler: object  # StopAndWait or SelectiveRepeat instance
     finished: bool = False
