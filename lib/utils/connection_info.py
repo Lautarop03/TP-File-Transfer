@@ -4,6 +4,7 @@ from lib.client.downloader import Downloader
 from lib.client.uploader import Uploader
 from lib.utils.constants import DOWNLOAD_OPERATION
 from lib.utils.segments import InitSegment
+from lib.utils.static import get_protocol_name_from_protocol_code
 
 
 @dataclass
@@ -14,11 +15,12 @@ class ConnectionInfo:
     protocol_handler: object  # StopAndWait or SelectiveRepeat instance
     finished: bool = False
 
-    # def __init__(self, init_segment: 'InitSegment', socket, ip, port,
-    #              verbose, quiet):
     def __init__(self, init_segment: 'InitSegment',
-                 socket, client_address, args):
+                 client_address, args):
 
+        # Force the server to use the same protocol as the client
+        args.protocol = get_protocol_name_from_protocol_code(
+            init_segment.protocol)
         if init_segment.opcode == DOWNLOAD_OPERATION:
             # args.dst = init_segment.name
             args.name = ""

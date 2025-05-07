@@ -1,6 +1,7 @@
 import socket
 import sys
 import threading
+import time
 from typing import Dict, Tuple
 
 from lib.utils.constants import BUFFER_SIZE, DOWNLOAD_OPERATION
@@ -48,7 +49,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 if args.verbose:
                     print("Successfully deserialized init segment")
 
-                connectionInfo = ConnectionInfo(init_segment, server_socket,
+                connectionInfo = ConnectionInfo(init_segment,
                                                 client_address, args)
                 connectionInfo.lock = threading.Lock()
                 client_connections[client_address] = connectionInfo
@@ -125,7 +126,7 @@ def run(args):
         while True:
             try:
                 # Receive data
-                data, client_address = server_socket.recvfrom(BUFFER_SIZE)
+                data, client_address = server_socket.recvfrom(BUFFER_SIZE + 10)
             except socket.timeout:
                 if not args.quiet:
                     print("[SERVER] Waiting for any client message...")

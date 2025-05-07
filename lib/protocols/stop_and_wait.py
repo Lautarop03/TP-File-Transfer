@@ -34,7 +34,8 @@ class StopAndWait:
             try:
                 print("On send: before get from communication_queue")
                 # self.waiting_ack = True
-                ack_packet = self.communication_queue.get(timeout=TIMEOUT)
+                ack_packet = self.communication_queue.get(
+                    timeout=TIMEOUT)
                 print("On send: after get from communication_queue")
 
                 if self.verbose:

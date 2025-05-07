@@ -4,6 +4,12 @@ from lib.utils.constants import SELECTIVE_REPEAT, STOP_AND_WAIT
 from lib.utils.transfer_config import TransferConfig
 
 
+def get_protocol_name_from_protocol_code(protocol_code):
+    if protocol_code == STOP_AND_WAIT:
+        return 'sw'
+    return 'sr'
+
+
 def get_protocol_code_from_protocol_str(protocol_str):
     return STOP_AND_WAIT if protocol_str == 'sw' else SELECTIVE_REPEAT
 

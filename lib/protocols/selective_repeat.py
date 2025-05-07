@@ -1,5 +1,5 @@
 from queue import Queue
-import socket
+import threading
 import time
 from lib.utils.constants import TIMEOUT, BUFFER_SIZE
 from lib.utils.segments import SelectiveRepeatSegment as Segment
@@ -39,6 +39,38 @@ class SelectiveRepeat:
 
         self.communication_queue = Queue()  # Queue for receiving ACKs
 
+        self.ack_queue = Queue()  # Queue for receiving ACKs
+        self._stop_event = threading.Event()
+
+        self.ack_worker_thread = threading.Thread(target=self.ack_worker)
+        self.ack_worker_thread.daemon = True
+        self.ack_worker_thread.start()
+
+    def ack_worker(self):
+        while not self._stop_event.is_set():
+            ack_packet = self.ack_queue.get()
+            try:
+                ack_segment = Segment.deserialize(ack_packet)
+                ack_num = ack_segment.ack_num
+                if self.verbose:
+                    print(
+                        f"[SelectiveRepeat] ACK recibido para ack_num={ack_num}")
+                # Mark the corresponding packet as acknowledged
+                for seq in list(self.ack_received.keys()):
+                    if ack_num == (seq % 256):
+                        self.ack_received[seq] = True
+                        if self.verbose:
+                            print(
+                                f"[SelectiveRepeat] ACK marcado para seq={seq}")
+                # Advance the window
+                while self.ack_received.get(self.send_base, False):
+                    if self.verbose:
+                        print(
+                            f"[SelectiveRepeat] Avanzando send_base de {self.send_base} a {self.send_base + 1}")
+                    self.send_base += 1
+            except Exception as e:
+                print(f"[SelectiveRepeat] Error procesando ACK: {e}")
+
     def send(self, payload, eof=0):
         # Si el numero de secuencia enviado es mas grande/igual
         # que el tamaño de la ventana + el paquete mas chico enviado sin ACK
@@ -70,7 +102,8 @@ class SelectiveRepeat:
 
         if self.verbose:
             print("[SelectiveRepeat] Enviando paquete "
-                  f"seq={self.next_seq_num}, eof={eof}")
+                  f"seq={self.next_seq_num}, eof={eof}, "
+                  f"payload_length={len(payload)}")
 
         # Envio
         self.socket.sendto(serialized, self.address)
@@ -92,30 +125,30 @@ class SelectiveRepeat:
                 self.socket.sendto(self.send_buffer[seq], self.address)
                 self.time_sent[seq] = now
 
-    def receive_ack_loop(self):
-        """
-        Espera los ACK, al recibir uno lo deserializa
-        y marca en el Buffer de ACK's que recibimos
-        el paquete Buffer[seq_number]
-        """
-        try:
-            self.socket.settimeout(0.01)
-            while True:
-                data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                ack_segment = Segment.deserialize(data)
-                ack_num = ack_segment.ack_num
+    # def receive_ack_loop(self):
+    #     """
+    #     Espera los ACK, al recibir uno lo deserializa
+    #     y marca en el Buffer de ACK's que recibimos
+    #     el paquete Buffer[seq_number]
+    #     """
+    #     try:
+    #         self.socket.settimeout(0.01)
+    #         while True:
+    #             data, _ = self.socket.recvfrom(BUFFER_SIZE)
+    #             ack_segment = Segment.deserialize(data)
+    #             ack_num = ack_segment.ack_num
 
-                for seq in self.ack_received:
-                    if ack_num == (seq % 256):
-                        self.ack_received[seq] = True
-                        if self.verbose:
-                            print("[SelectiveRepeat] ACK recibido"
-                                  f" para seq={seq}")
-                while self.ack_received.get(self.send_base, False):
-                    self.send_base += 1
+    #             for seq in self.ack_received:
+    #                 if ack_num == (seq % 256):
+    #                     self.ack_received[seq] = True
+    #                     if self.verbose:
+    #                         print("[SelectiveRepeat] ACK recibido"
+    #                               f" para seq={seq}")
+    #             while self.ack_received.get(self.send_base, False):
+    #                 self.send_base += 1
 
-        except socket.timeout:
-            pass
+    #     except socket.timeout:
+    #         pass
 
     def receive_file(self, data_bytes) -> tuple[bytes, bool, bool]:
         try:
@@ -150,7 +183,9 @@ class SelectiveRepeat:
 
             # Enviar ACK
             ack = Segment(ack_num=seq)
+            print(f"Sending ACK with ack_num={seq}")
             self.socket.sendto(ack.serialize(), self.address)
+            print(f"ACK sent")
 
             # Confirmar si se puede cerrar
             all_received = (
@@ -163,3 +198,17 @@ class SelectiveRepeat:
         except Exception as e:
             print(f"[SelectiveRepeat] Error: {e}")
             return (b"", False, False)
+
+    def put_bytes(self, data):
+        print(f"Putting {len(data)} bytes into SR communication queue")
+        self.communication_queue.put(data)
+
+    # TODO: Esto lo vamos a tener que borrar o normalizar con el put_bytes, que el protocolo sepa que hacer con la info que le llega
+    # no deberia ser tan terrible
+    def put_ack_bytes(self, data):
+        print(f"Putting {len(data)} bytes into SR communication queue")
+        self.ack_queue.put(data)
+
+    def stop(self):
+        self._stop_event.set()
+        self.ack_worker_thread.join(timeout=1)

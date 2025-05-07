@@ -121,10 +121,10 @@ class Uploader():
                 # Receive data
                 # Al socket le quedo el time out que se uso en init
                 # self.socket.settimeout(None)  # Reset timeuot
-                print("Waiting for message")
+                print("Waiting for message on uploader...")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                self.protocol_handler.put_bytes(data)
                 print(f"Received data: {data}")
+                self.protocol_handler.put_ack_bytes(data)
             except socket.timeout:
                 if not self.quiet:
                     print("TIMEOUT while waiting for message on uploader...")
@@ -148,3 +148,4 @@ class Uploader():
     def terminate(self):
         self.file_manager.close()
         self.data_worker_thread.join(timeout=1)
+        self.protocol_handler.stop()

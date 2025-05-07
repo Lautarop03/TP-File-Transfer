@@ -96,7 +96,7 @@ class Downloader():
                 # Receive data
                 # Al socket le quedo el time out que se uso en init
                 print("Waiting for data on downloader")
-                data, _ = self.socket.recvfrom(BUFFER_SIZE)
+                data, _ = self.socket.recvfrom(BUFFER_SIZE + 8)
                 print("Received data on downloader")
                 self.protocol_handler.put_bytes(data)
                 # Reset timeout counter on successful receive
