@@ -44,7 +44,7 @@ class Downloader():
                 if data is None:  # Signal to ignore
                     continue
 
-                if data == EOF_MARKER:
+                if data is EOF_MARKER:
                     print("Download complete")
                     break
 
@@ -67,14 +67,12 @@ class Downloader():
                 data_bytes)
 
             if is_repeated:
-                self.data_queue.put(None)
+                data = None
 
-            # if is_eof:
-            #     data = EOF_MARKER
-            #     if self.is_client:
-            #         self.socket.sendto(b"FIN", self.destination_address)
-            else:
-                self.data_queue.put(data)
+            if is_eof:
+                data = EOF_MARKER
+
+            self.data_queue.put(data)
 
             result_queue.put(is_eof)  # Siempre le mando, sino bloquea
 
