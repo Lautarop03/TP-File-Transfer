@@ -1,3 +1,4 @@
+from queue import Queue
 import socket
 import time
 from lib.utils.constants import TIMEOUT, BUFFER_SIZE
@@ -35,6 +36,8 @@ class SelectiveRepeat:
 
         # Buffer de paquetes que llegaron pero no estan ordenados (seq number)
         self.recv_buffer = {}
+
+        self.communication_queue = Queue()  # Queue for receiving ACKs
 
     def send(self, payload, eof=0):
         # Si el numero de secuencia enviado es mas grande/igual

@@ -15,8 +15,6 @@ def run(operation):
             print("Connection failed")
             if not operation.quiet:
                 print(f"Error: {operation.error}")
-            if not operation.quiet:
-                print(f"Error: {operation.error}")
             return 1
 
         if not operation.quiet:

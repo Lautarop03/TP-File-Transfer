@@ -4,7 +4,7 @@ HEADER_SIZE = (
 )
 DATA_SIZE = BUFFER_SIZE - HEADER_SIZE  # Maximum packet data size
 
-TIMEOUT = 0.1  # Timeout to receive an ACK
+TIMEOUT = 0.2  # Timeout to receive an ACK
 
 APPEND_MODE = "ab"  # Append mode for binary files
 
