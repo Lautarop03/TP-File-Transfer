@@ -49,7 +49,7 @@ class Uploader():
 
             while True:
                 if self.current_size_remaining > 0:
-                    data = self.file_manager.read(DATA_SIZE)
+                    data = self.file_manager.read(1024)
                     self.data_queue.put(data)
                     self.current_size_remaining -= len(data)
                 else:

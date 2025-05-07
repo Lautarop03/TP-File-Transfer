@@ -1,4 +1,5 @@
 from lib.protocols.stop_and_wait import StopAndWait
+from lib.protocols.selective_repeat import SelectiveRepeat
 from lib.utils.constants import SELECTIVE_REPEAT, STOP_AND_WAIT
 from lib.utils.transfer_config import TransferConfig
 
@@ -18,9 +19,12 @@ def get_protocol_from_args(args, socket, destination_address):
             args.quiet
         )
     else:
-        # TODO: Implement SelectiveRepeat handler
-        print("Selective Repeat protocol not implemented yet")
-        raise NotImplementedError
+        return SelectiveRepeat(
+            socket,
+            destination_address,
+            args.verbose,
+            args.quiet
+        )
 
 
 def get_transfer_config_from_args(args, file_name, file_path):
