@@ -2,7 +2,7 @@ import socket
 import time
 import queue
 import threading
-from lib.utils.constants import TIMEOUT
+from lib.utils.constants import HEADER_SIZE_SR, TIMEOUT
 from lib.utils.segments import SelectiveRepeatSegment as Segment
 from lib.exceptions import PacketDuplicateOrCorrupted
 
@@ -13,6 +13,8 @@ class SelectiveRepeat:
         self.address = address
         self.verbose = verbose
         self.quiet = quiet
+
+        self.header_size = HEADER_SIZE_SR
 
         # Tamaño de la ventana deslizante
         self.window_size = 4

@@ -1,6 +1,6 @@
 from queue import Queue, Empty
 from lib.utils.constants import (
-    TIMEOUT, MAX_ATTEMPTS)
+    BUFFER_SIZE, HEADER_SIZE_SW, TIMEOUT, MAX_ATTEMPTS)
 from lib.utils.segments import StopAndWaitSegment
 from lib.exceptions import MaxSendAttemptsExceeded
 
@@ -17,6 +17,8 @@ class StopAndWait:
         self.quiet = quiet
         self.communication_queue = Queue()  # Queue for receiving ACKs
         # self.waiting_ack = False
+        self.header_size = HEADER_SIZE_SW  # Header size in bytes
+        self.data_size = BUFFER_SIZE - HEADER_SIZE_SW
 
     def send(self, payload, eof=0):  # Send a single package
         SW_segment = StopAndWaitSegment(

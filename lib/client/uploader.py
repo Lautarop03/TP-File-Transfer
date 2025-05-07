@@ -46,10 +46,10 @@ class Uploader():
         """Worker thread that reads data from file"""
         print(f"Data worker start, reading from: {self.file_manager.path}")
         try:
-
+            data_size = BUFFER_SIZE - self.protocol_handler.header_size
             while True:
                 if self.current_size_remaining > 0:
-                    data = self.file_manager.read(1024)
+                    data = self.file_manager.read(data_size)
                     self.data_queue.put(data)
                     self.current_size_remaining -= len(data)
                 else:
