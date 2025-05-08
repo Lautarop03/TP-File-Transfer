@@ -1,4 +1,3 @@
-from lib.utils.constants import DATA_SIZE
 import os
 
 
@@ -15,7 +14,7 @@ class FileManager:
             print(f"Error opening file: {e}")
             self.file = None
 
-    def read(self, size=DATA_SIZE):
+    def read(self, size):
         if self.file and "rb" in self.mode:
             try:
                 return self.file.read(size)

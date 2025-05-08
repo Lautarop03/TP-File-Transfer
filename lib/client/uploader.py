@@ -1,6 +1,6 @@
 import queue
 from ..utils.constants import (
-    BUFFER_SIZE, DATA_SIZE, EOF_MARKER, READ_MODE, UPLOAD_OPERATION)
+    BUFFER_SIZE, EOF_MARKER, READ_MODE, UPLOAD_OPERATION)
 from ..utils.file_manager import FileManager
 import os
 from queue import Queue
@@ -46,10 +46,10 @@ class Uploader():
         """Worker thread that reads data from file"""
         print(f"Data worker start, reading from: {self.file_manager.path}")
         try:
-
+            data_size = BUFFER_SIZE - self.protocol_handler.header_size
             while True:
                 if self.current_size_remaining > 0:
-                    data = self.file_manager.read(DATA_SIZE)
+                    data = self.file_manager.read(data_size)
                     self.data_queue.put(data)
                     self.current_size_remaining -= len(data)
                 else:

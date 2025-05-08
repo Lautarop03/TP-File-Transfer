@@ -170,7 +170,7 @@ class SelectiveRepeatSegment:
                   " EOF:", self.eof_num)
             print("[SelectiveRepeat] Payload Length:", len(self.payload))
             print("[SelectiveRepeat] CRC:", hex(crc))
-            # print("[SelectiveRepeat] Serialized Packet:", final_packet)
+            print("[SelectiveRepeat] Serialized Packet:", final_packet)
 
         return final_packet
 
