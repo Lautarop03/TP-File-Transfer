@@ -65,11 +65,11 @@ class InitSegment:
         protocol = header_byte & 0b1
 
         if verbose:
-            print("Deserialize InitSegment result:")
-            print("\t opcode:", opcode)
-            print("\t protocol:", protocol)
-            print("\t ack:", ack)
-            print("\t name:", file_name)
+            print("Deserialize InitSegment result:"
+                  f"\n\t opcode: {opcode}"
+                  f"\n\t protocol: {protocol}"
+                  f"\n\t ack: {ack}"
+                  f"\n\t name: {file_name}")
 
         return InitSegment(opcode, protocol, ack, file_name)
 
@@ -85,7 +85,7 @@ class StopAndWaitSegment:
     def _build_header(self):
         return (self.seq_num << 2) | (self.ack_num << 1) | self.eof_num
 
-    def serialize(self, verbose=True):
+    def serialize(self, verbose=False):
         header_byte = self._build_header()
         header_bytes = bytes([header_byte])
         payload_len_bytes = len(self.payload).to_bytes(2, byteorder="big")
@@ -96,18 +96,18 @@ class StopAndWaitSegment:
         final_packet = packet_to_crc + crc_bytes
 
         if verbose:
-            print("Serialized StopAndWaitSegment")
-            print("[StopAndWait] Seq:", self.seq_num)
-            print("[StopAndWait] Ack:", self.ack_num)
-            print("[StopAndWait] Eof:", self.eof_num)
-            print("[StopAndWait] Payload Length:", len(self.payload))
-            print("[StopAndWait] CRC:", hex(crc))
+            print("Serialized StopAndWaitSegment:"
+                  f"\n\tSeq: {self.seq_num}"
+                  f"\n\tAck: {self.ack_num}"
+                  f"\n\tEof: {self.eof_num}"
+                  f"\n\tPayload Length: {len(self.payload)}"
+                  f"\n\tCRC: {hex(crc)}")
             # print("[StopAndWait] Serialized Packet:", final_packet)
 
         return final_packet
 
     @staticmethod
-    def deserialize(data) -> 'StopAndWaitSegment':
+    def deserialize(data, verbose) -> 'StopAndWaitSegment':
         if len(data) < 7:
             raise ValueError("Packet too short")
 
@@ -128,13 +128,13 @@ class StopAndWaitSegment:
         seq_num = (header_byte >> 2) & 0b1
         ack_num = (header_byte >> 1) & 0b1
         eof_num = header_byte & 0b1
-
-        print("De-serialized StopAndWaitSegment")
-        print("[StopAndWait DEs] Seq:", seq_num)
-        print("[StopAndWait DEs] Ack:", ack_num)
-        print("[StopAndWait DEs] Eof:", eof_num)
-        print("[StopAndWait DEs] Payload Length:", payload_len)
-        print("[StopAndWait DEs] CRC:", hex(crc_received))
+        if verbose:
+            print("De-serialized StopAndWaitSegment:"
+                  f"\n\tSeq: {seq_num}"
+                  f"\n\tAck: {ack_num}"
+                  f"\n\tEof: {eof_num}"
+                  f"\n\tPayload Length: {payload_len}"
+                  f"\n\tCRC: {hex(crc_received)}")
 
         return StopAndWaitSegment(payload, seq_num, ack_num, eof_num)
 
@@ -165,12 +165,14 @@ class SelectiveRepeatSegment:
         final_packet = packet_to_crc + crc_bytes
 
         if verbose:
-            print("[SelectiveRepeat] Seq:", self.seq_num,
-                  " Ack:", self.ack_num, " Win:", self.win_size,
-                  " EOF:", self.eof_num)
-            print("[SelectiveRepeat] Payload Length:", len(self.payload))
-            print("[SelectiveRepeat] CRC:", hex(crc))
-            print("[SelectiveRepeat] Serialized Packet:", final_packet)
+            print("Serialized SelectiveRepeatSegment:"
+                  f"\n\tSeq: {self.seq_num}"
+                  f"\n\tAck: {self.ack_num}"
+                  f"\n\tWin: {self.win_size}"
+                  f"\n\tEOF: {self.eof_num}"
+                  f"\n\tPayload Length: {len(self.payload)}"
+                  f"\n\tCRC: {hex(crc)}"
+                  f"\n\tSerialized Packet: {final_packet}")
 
         return final_packet
 

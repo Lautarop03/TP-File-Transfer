@@ -12,13 +12,13 @@ def run(operation):
     try:
         # Initialize connection
         if not init_connection(operation):
-            print("Connection failed")
+            print("[CLIENT] Connection failed")
             if not operation.quiet:
                 print(f"Error: {operation.error}")
             return 1
 
         if not operation.quiet:
-            print("\nStarting transfer")
+            print("\n[CLIENT] Starting transfer")
 
         operation.transfer(is_client=True)
         operation.terminate()
@@ -40,7 +40,7 @@ def init_connection(operation) -> bool:
     """Initialize connection with server"""
     try:
         if not operation.quiet:
-            print("Initiating connection with server")
+            print("[CLIENT] Initiating connection with server")
 
         # Create and send INIT message
         init_segment = InitSegment(operation.op_code, operation.protocol_code,
@@ -49,8 +49,8 @@ def init_connection(operation) -> bool:
         init_message = init_segment.serialize(operation.verbose)
 
         if operation.verbose:
-            print(f"Created init message with data: {init_message}")
-            print("Trying to connect with server running on "
+            print(f"[CLIENT] Created init message with data: {init_message}")
+            print("[CLIENT] Trying to connect with server running on "
                   f"{operation.destination_address[0]}:"
                   f"{operation.destination_address[1]}")
 
@@ -58,17 +58,17 @@ def init_connection(operation) -> bool:
             init_message, operation.destination_address)
 
         if not operation.quiet:
-            print("Waiting for server response")
+            print("[CLIENT] Waiting for server response")
 
         # Wait for server response
         operation.socket.settimeout(5)  # 5 seconds timeout for INIT response
         response, _ = operation.socket.recvfrom(BUFFER_SIZE)
 
         if not operation.quiet:
-            print("Received server response")
+            print("[CLIENT] Received server response")
 
         if operation.verbose:
-            print(f"Received bytes: {response}")
+            print(f"[CLIENT] Received bytes: {response}")
 
         init_segment = InitSegment.deserialize(response, operation.verbose)
         if not init_segment.ack == 0b1:

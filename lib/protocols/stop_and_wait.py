@@ -24,7 +24,7 @@ class StopAndWait:
         SW_segment = StopAndWaitSegment(
             payload=payload, seq_num=self.seq, eof_num=eof)
 
-        serialized_packet = SW_segment.serialize()
+        serialized_packet = SW_segment.serialize(self.verbose)
 
         while MAX_ATTEMPTS > self.send_attempts:
 
@@ -42,7 +42,8 @@ class StopAndWait:
                 if self.verbose:
                     print(f"Received ACK for SW. Bytes: {ack_packet}")
 
-                ack_packet = StopAndWaitSegment.deserialize(ack_packet)
+                ack_packet = StopAndWaitSegment.deserialize(
+                    ack_packet, self.verbose)
                 print(f"recibo ack: {ack_packet.ack_num}"
                       f" y mande seq: {self.seq}")
                 if ack_packet.ack_num == self.seq:
@@ -71,7 +72,9 @@ class StopAndWait:
 
     def put_bytes(self, data):
         """Put an ACK packet into the queue"""
-        print(f"Putting {len(data)} bytes into SW communication queue")
+        if self.verbose:
+            print(f"[StopAndWait] Putting {len(data)} bytes "
+                  f"into communication queue")
         self.communication_queue.put(data)
 
     def unpack(self, serialized_data: bytes) -> tuple[bool, StopAndWaitSegment,
@@ -79,7 +82,8 @@ class StopAndWait:
         """
         Receive SW package and deserializes, return bytes for ack
         """
-        deserialized_data = StopAndWaitSegment.deserialize(serialized_data)
+        deserialized_data = StopAndWaitSegment.deserialize(
+            serialized_data, self.verbose)
 
         if deserialized_data.seq_num == self.ack:
             # Expected packet
@@ -94,17 +98,14 @@ class StopAndWait:
         else:
             # Duplicate or out-of-order packet
             if not self.quiet:
-                print("Duplicate or corrupt"
+                print("[StopAndWait] Duplicate or corrupt "
                       f"package: {deserialized_data}")
             new_ack_num = 1 - self.ack
             is_repeated = True
             # send the last ACK I received
             ack_packet = StopAndWaitSegment(ack_num=new_ack_num)
 
-        ack_bytes = ack_packet.serialize()
-
-        print(f"Ending unpack: Received seq_num: {deserialized_data.seq_num},"
-              f" ack: {new_ack_num}")
+        ack_bytes = ack_packet.serialize(self.verbose)
 
         return (is_repeated, deserialized_data, ack_bytes)
 
@@ -121,17 +122,19 @@ class StopAndWait:
 
         try:
             if data.eof_num == 1:
-                print("EOF received.")
                 is_eof = True
+                if self.verbose:
+                    print("[StopAndWait] EOF received")
 
             if self.verbose:
-                print(f"SW ACK bytes: {ack_bytes}")
+                print(f"[StopAndWait] ACK bytes: {ack_bytes}")
             if not self.quiet:
-                print(f"Sending SW ACK to: {self.destination_address}")
+                print("[StopAndWait] Sending ACK "
+                      f"to: {self.destination_address}")
 
             self.socket.sendto(ack_bytes, self.destination_address)
 
         except Exception as e:
-            print(f"[{self.actorName}] Error receiving: {e}")  # Debug
+            print(f"[StopAndWait] Error receiving: {e}")  # Debug
 
         return (data.payload, is_repeated, is_eof)

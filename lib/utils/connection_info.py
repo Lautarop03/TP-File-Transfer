@@ -15,24 +15,21 @@ class ConnectionInfo:
     protocol_handler: object  # StopAndWait or SelectiveRepeat instance
     finished: bool = False
 
-    # def __init__(self, init_segment: 'InitSegment', socket, ip, port,
-    #              verbose, quiet):
-    def __init__(self, init_segment: 'InitSegment',
-                 client_address, args):
+    def __init__(self, init_segment: 'InitSegment', client_address, args):
+
+        # Argumentos para el operation handler
+        args.name = ""
+        args.host = client_address[0]
+        args.port = client_address[1]
         args.protocol = get_protocol_name_from_protocol_code(
             init_segment.protocol)
+        server_path = args.storage + '/' + init_segment.name.decode("utf-8")
+
         if init_segment.opcode == DOWNLOAD_OPERATION:
-            # args.dst = init_segment.name
-            args.name = ""
-            args.src = args.storage + '/' + init_segment.name.decode("utf-8")
-            args.host = client_address[0]
-            args.port = client_address[1]
+            args.src = server_path
             operation_handler = Uploader(args)
         else:
-            args.name = ""
-            args.dst = args.storage + '/' + init_segment.name.decode("utf-8")
-            args.host = client_address[0]
-            args.port = client_address[1]
+            args.dst = server_path
             operation_handler = Downloader(args, False)
 
         self.operation_handler = operation_handler

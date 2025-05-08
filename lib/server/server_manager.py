@@ -4,9 +4,6 @@ import threading
 from typing import Dict, Tuple
 
 from lib.utils.constants import BUFFER_SIZE, DOWNLOAD_OPERATION
-# from protocols.stop_and_wait import StopAndWait
-# TODO: Import when implemented
-# from protocols.selective_repeat import SelectiveRepeat
 from ..utils.segments import InitSegment
 from ..utils.connection_info import ConnectionInfo
 
@@ -18,8 +15,8 @@ def process_message(data: bytes, client_address: Tuple[str, int],
     """Handle received message in a separate thread"""
     try:
         if not args.quiet:
-            print(f"Processing data from {client_address}")
-            print(f"Data length: {len(data)} bytes")
+            print(f"[SERVER] Processing {len(data)} bytes of data "
+                  f"from {client_address}")
 
         if args.verbose:
             print(f"data: {data}")
@@ -27,7 +24,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
         # Check if this is a FIN message
         if data == b"FIN":
             if not args.quiet:
-                print(f"Received FIN message from {client_address}")
+                print(f"[SERVER] Received FIN message from {client_address}")
             # Remove client from connections
             with client_connections_lock:
                 if client_address in client_connections:
@@ -36,13 +33,18 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                     del client_connections[client_address]
             return
 
+        # Check if this is a new client (INIT message)
         if client_address not in client_connections:
             with client_connections_lock:
+                if not args.quiet:
+                    print("[SERVER] Starting new connection "
+                          f"with {client_address}")
                 init_segment = InitSegment.deserialize(data, args.verbose)
                 client_opcode = init_segment.opcode
 
                 if args.verbose:
-                    print("Successfully deserialized init segment")
+                    print("[SERVER] Successfully deserialized init segment "
+                          f"from {client_address}")
 
                 connectionInfo = ConnectionInfo(init_segment,
                                                 client_address, args)
@@ -55,10 +57,11 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 init_ack_bytes = init_ack.serialize(args.verbose)
 
                 if not args.quiet:
-                    print("Sending INIT_ACK")
+                    print("[SERVER] Sending connection confirmation "
+                          f"with {client_address}")
 
                 if args.verbose:
-                    print(f"INIT_ACK bytes: {init_ack_bytes}")
+                    print(f"[SERVER] Sending INIT_ACK bytes: {init_ack_bytes}")
                 # Send INIT_ACK for successful INIT
                 server_socket.sendto(init_ack_bytes, client_address)
 
@@ -74,19 +77,20 @@ def process_message(data: bytes, client_address: Tuple[str, int],
 
             with connectionInfo.lock:
                 if args.verbose:
-                    print("Is existing client")
+                    print(f"[SERVER] Is existing client: {client_address}")
                 if connectionInfo.finished:
-                    print("Already finished transfer with client")
+                    print("[SERVER] Already finished transfer "
+                          f"with {client_address}")
                     return
 
                 finished = connectionInfo.operation_handler.transfer(
                     is_client=False)
                 connectionInfo.set_finished(finished)
-        # print("release client_connections lock")
 
     except Exception as e:
         if args.verbose:
-            print(f"Error processing message from {client_address}: {e}")
+            print("[SERVER] Error processing message "
+                  f"from {client_address}: {e}")
         server_socket.sendto(
             "ERROR: Internal server error".encode(),
             client_address)
@@ -128,8 +132,8 @@ def run(args):
                 continue
 
             if not args.quiet:
-                print(f"\n[MSG N°{flag}] Received data from client:"
-                      f"{client_address}")
+                print(f"\n[SERVER]-[MSG N°{flag}] Received data from client: "
+                      f"{client_address}\n")
             flag += 1
 
             # Create and start a new thread for message processing
@@ -142,7 +146,7 @@ def run(args):
             thread.start()
 
     except KeyboardInterrupt:
-        print("\nServer shutting down by keyboard interrupt...")
+        print("\nServer shutting down gracefully\n")
     except Exception as e:
         print(f"Server error: {e}", file=sys.stderr)
         raise e

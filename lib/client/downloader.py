@@ -4,7 +4,6 @@ import socket
 import threading
 from lib.utils.static import (
     get_protocol_from_args,
-    # get_transfer_config_from_args,
     get_protocol_code_from_protocol_str)
 from ..utils.file_manager import FileManager
 from ..utils.constants import (
@@ -36,32 +35,37 @@ class Downloader():
 
     def data_worker(self):
         """Worker thread that writes received data to file"""
-        print(f"Data worker start, writing to: {self.file_manager.path}")
+        if self.verbose:
+            print("[Downloader] Data worker start, "
+                  f"writing to: {self.file_manager.path}")
         try:
 
             while True:
-                data = self.data_queue.get()
-                if data is None:  # Signal to ignore
-                    continue
+                data_bytes = self.data_queue.get()
 
-                if data is EOF_MARKER:
-                    print("Download complete")
+                if self.error is not None:
                     break
 
-                self.file_manager.append(data)
+                if data_bytes is None:  # Signal to ignore
+                    continue
+
+                if data_bytes is EOF_MARKER:
+                    print("[Downloader] Download complete")
+                    break
+
+                self.file_manager.append(data_bytes)
 
         except Exception as e:
-            self.error = f"Error writing file: {str(e)}"
-        # finally:
-        #     if self.file_manager:
-        #         self.file_manager.close()
+            self.error = f"Error writing file in download: {str(e)}"
 
     def protocol_worker(self, result_queue):
         """
         Worker thread that handles protocol and receives data
         """
+        if self.verbose:
+            print("[Downloader] Protocol worker start")
+
         try:
-            # print("protocol worker")
             data_bytes = self.protocol_handler.communication_queue.get()
             data, is_repeated, is_eof = self.protocol_handler.receive_file(
                 data_bytes)
@@ -77,8 +81,8 @@ class Downloader():
             result_queue.put(is_eof)  # Siempre le mando, sino bloquea
 
         except Exception as e:
-            self.error = f"Protocol error: {str(e)}"
-            self.data_queue.put(None)  # Signal data worker to stop
+            self.error = f"[Downloader] Protocol error: {str(e)}"
+            self.data_queue.put("")  # Signal data worker to stop
 
     def transfer(self, is_client=True):
         if is_client:
@@ -90,14 +94,14 @@ class Downloader():
         result_queue = queue.Queue()
         is_finished = False
         timeout_counter = 0
+        self.socket.settimeout(5)  # timeout for server response
 
         while not is_finished:
             try:
                 # Receive data
-                # Al socket le quedo el time out que se uso en init
-                print("Waiting for data on downloader")
+                print("[CLIENT] Waiting for data...")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                print("Received data on downloader")
+                print("[CLIENT] Processing data")
                 self.protocol_handler.put_bytes(data)
                 # Reset timeout counter on successful receive
                 timeout_counter = 0
@@ -118,10 +122,12 @@ class Downloader():
 
             is_finished = result_queue.get()
 
-        print("Transfer all here finished")
+        if not self.quiet:
+            print("[CLIENT] Transfer complete")
         self.file_manager.close()
         self.socket.sendto(b"FIN", self.destination_address)
-        print("Sent FIN")
+        if self.verbose:
+            print("[CLIENT] Sending FIN to server")
         self.socket.close()
 
     def start_workers(self, result_queue):

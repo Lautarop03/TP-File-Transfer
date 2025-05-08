@@ -1,7 +1,6 @@
 import argparse
 from lib.client.client_manager import run
 from lib.client.uploader import Uploader
-# from lib.utils.constants import UPLOAD_OPERATION
 
 
 def add_arguments(parser):
