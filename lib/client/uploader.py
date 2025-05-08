@@ -108,29 +108,32 @@ class Uploader():
     def transfer_all_here(self, result_queue):
         is_finished = False
         self.socket.settimeout(5)  # timeout for server response
+        try:
+            while not is_finished:
+                self.start_workers(result_queue)
+                try:
+                    # Receive data
+                    print("[CLIENT] Waiting for server response...")
+                    data, _ = self.socket.recvfrom(BUFFER_SIZE)
+                    print("[CLIENT] Proccesing response")
+                    self.protocol_handler.put_bytes(data)
+                except socket.timeout:
+                    if not self.quiet:
+                        print("[CLIENT] TIMEOUT while waiting for "
+                              "message on uploader...")
+                    continue
+                is_finished = result_queue.get()
 
-        while not is_finished:
-            self.start_workers(result_queue)
-            try:
-                # Receive data
-                print("[CLIENT] Waiting for server response...")
-                data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                print("[CLIENT] Proccesing response")
-                self.protocol_handler.put_bytes(data)
-            except socket.timeout:
-                if not self.quiet:
-                    print("[CLIENT] TIMEOUT while waiting for "
-                          "message on uploader...")
-                continue
-            is_finished = result_queue.get()
-
-        if not self.quiet:
-            print("[CLIENT] Transfer complete")
-        self.file_manager.close()
-        self.socket.sendto(b"FIN", self.destination_address)
-        if self.verbose:
-            print("[CLIENT] Sending FIN to server")
-        self.socket.close()
+            if not self.quiet:
+                print("[CLIENT] Transfer complete")
+        except KeyboardInterrupt:
+            print("\nClient interruption. Closing connection gracefully\n")
+        finally:
+            self.file_manager.close()
+            self.socket.sendto(b"FIN", self.destination_address)
+            if self.verbose:
+                print("[CLIENT] Sending FIN to server")
+            self.socket.close()
 
     def start_workers(self, result_queue):
         protocol_thread = threading.Thread(target=self.protocol_worker,

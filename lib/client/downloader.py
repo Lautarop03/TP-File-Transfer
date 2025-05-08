@@ -95,40 +95,43 @@ class Downloader():
         is_finished = False
         timeout_counter = 0
         self.socket.settimeout(5)  # timeout for server response
+        try:
+            while not is_finished:
+                try:
+                    # Receive data
+                    print("[CLIENT] Waiting for data...")
+                    data, _ = self.socket.recvfrom(BUFFER_SIZE)
+                    print("[CLIENT] Processing data")
+                    self.protocol_handler.put_bytes(data)
+                    # Reset timeout counter on successful receive
+                    timeout_counter = 0
+                except socket.timeout:
+                    timeout_counter += 1
+                    if timeout_counter >= MAX_ATTEMPTS:
+                        print("[CLIENT] Error: Maximum number of timeouts "
+                              f"({MAX_ATTEMPTS}) reached. Aborting transfer.")
+                        e = f"Connection timeout after {MAX_ATTEMPTS} attempts"
+                        self.error = e
+                        break
+                    if not self.quiet:
+                        print("[CLIENT] Timeout waiting for server message..."
+                              f" ({timeout_counter}/{MAX_ATTEMPTS})")
+                    continue
 
-        while not is_finished:
-            try:
-                # Receive data
-                print("[CLIENT] Waiting for data...")
-                data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                print("[CLIENT] Processing data")
-                self.protocol_handler.put_bytes(data)
-                # Reset timeout counter on successful receive
-                timeout_counter = 0
-            except socket.timeout:
-                timeout_counter += 1
-                if timeout_counter >= MAX_ATTEMPTS:
-                    print("[CLIENT] Error: Maximum number of timeouts "
-                          f"({MAX_ATTEMPTS}) reached. Aborting transfer.")
-                    e = f"Connection timeout after {MAX_ATTEMPTS} attempts"
-                    self.error = e
-                    break
-                if not self.quiet:
-                    print("[CLIENT] Timeout waiting for server message..."
-                          f" ({timeout_counter}/{MAX_ATTEMPTS})")
-                continue
+                self.start_workers(result_queue)
 
-            self.start_workers(result_queue)
+                is_finished = result_queue.get()
 
-            is_finished = result_queue.get()
-
-        if not self.quiet:
-            print("[CLIENT] Transfer complete")
-        self.file_manager.close()
-        self.socket.sendto(b"FIN", self.destination_address)
-        if self.verbose:
-            print("[CLIENT] Sending FIN to server")
-        self.socket.close()
+            if not self.quiet:
+                print("[CLIENT] Transfer complete")
+        except KeyboardInterrupt:
+            print("\nClient interruption. Closing connection gracefully\n")
+        finally:
+            self.file_manager.close()
+            self.socket.sendto(b"FIN", self.destination_address)
+            if self.verbose:
+                print("[CLIENT] Sending FIN to server")
+            self.socket.close()
 
     def start_workers(self, result_queue):
         protocol_thread = threading.Thread(target=self.protocol_worker,
