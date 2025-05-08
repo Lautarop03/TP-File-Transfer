@@ -113,9 +113,11 @@ class Uploader():
                 self.start_workers(result_queue)
                 try:
                     # Receive data
-                    print("[CLIENT] Waiting for server response...")
+                    if not self.quiet:
+                        print("[CLIENT] Waiting for server response...")
                     data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                    print("[CLIENT] Proccesing response")
+                    if not self.quiet:
+                        print("[CLIENT] Proccesing response")
                     self.protocol_handler.put_bytes(data)
                 except socket.timeout:
                     if not self.quiet:
@@ -124,8 +126,7 @@ class Uploader():
                     continue
                 is_finished = result_queue.get()
 
-            if not self.quiet:
-                print("[CLIENT] Transfer complete")
+            print("[CLIENT] Transfer complete")
         except KeyboardInterrupt:
             print("\nClient interruption. Closing connection gracefully\n")
         finally:

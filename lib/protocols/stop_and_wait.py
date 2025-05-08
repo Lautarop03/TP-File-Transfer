@@ -16,7 +16,6 @@ class StopAndWait:
         self.verbose = verbose
         self.quiet = quiet
         self.communication_queue = Queue()  # Queue for receiving ACKs
-        # self.waiting_ack = False
         self.header_size = HEADER_SIZE_SW  # Header size in bytes
         self.data_size = BUFFER_SIZE - HEADER_SIZE_SW
 
@@ -34,30 +33,25 @@ class StopAndWait:
             self.socket.sendto(serialized_packet, self.destination_address)
 
             try:
-                print("On send: before get from communication_queue")
-                # self.waiting_ack = True
                 ack_packet = self.communication_queue.get(timeout=TIMEOUT)
-                print("On send: after get from communication_queue")
 
                 if self.verbose:
                     print(f"Received ACK for SW. Bytes: {ack_packet}")
 
                 ack_packet = StopAndWaitSegment.deserialize(
                     ack_packet, self.verbose)
-                print(f"recibo ack: {ack_packet.ack_num}"
-                      f" y mande seq: {self.seq}")
                 if ack_packet.ack_num == self.seq:
                     # Package received successfully
                     self.send_attempts = 0
                     self.seq = 1 - self.seq
-                    # self.waiting_ack = False
                     return
                 else:
                     # The ACK is not what I expect
                     # Debug
-                    print(
-                        "[StopAndWaitW] Duplicate or corrupt package:"
-                        f"{ack_packet}")
+                    if self.verbose:
+                        print(
+                            "[StopAndWaitW] Duplicate or corrupt package:"
+                            f"{ack_packet}")
 
             except Empty:
                 print("[StopAndWait] Timeout waiting for ACK")  # Debug

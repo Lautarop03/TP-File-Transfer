@@ -18,13 +18,9 @@ def process_message(data: bytes, client_address: Tuple[str, int],
             print(f"[SERVER] Processing {len(data)} bytes of data "
                   f"from {client_address}")
 
-        if args.verbose:
-            print(f"data: {data}")
-
         # Check if this is a FIN message
         if data == b"FIN":
-            if not args.quiet:
-                print(f"[SERVER] Received FIN message from {client_address}")
+            print(f"[SERVER] Received FIN message from {client_address}")
             # Remove client from connections
             with client_connections_lock:
                 if client_address in client_connections:
@@ -36,9 +32,8 @@ def process_message(data: bytes, client_address: Tuple[str, int],
         # Check if this is a new client (INIT message)
         if client_address not in client_connections:
             with client_connections_lock:
-                if not args.quiet:
-                    print("[SERVER] Starting new connection "
-                          f"with {client_address}")
+                print("[SERVER] Starting new connection "
+                      f"with {client_address}")
                 init_segment = InitSegment.deserialize(data, args.verbose)
                 client_opcode = init_segment.opcode
 

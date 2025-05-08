@@ -50,7 +50,8 @@ class Downloader():
                     continue
 
                 if data_bytes is EOF_MARKER:
-                    print("[Downloader] Download complete")
+                    if not self.quiet:
+                        print("[Downloader] Download complete")
                     break
 
                 self.file_manager.append(data_bytes)
@@ -99,9 +100,11 @@ class Downloader():
             while not is_finished:
                 try:
                     # Receive data
-                    print("[CLIENT] Waiting for data...")
+                    if not self.quiet:
+                        print("[CLIENT] Waiting for data...")
                     data, _ = self.socket.recvfrom(BUFFER_SIZE)
-                    print("[CLIENT] Processing data")
+                    if not self.quiet:
+                        print("[CLIENT] Processing data")
                     self.protocol_handler.put_bytes(data)
                     # Reset timeout counter on successful receive
                     timeout_counter = 0
@@ -122,8 +125,7 @@ class Downloader():
 
                 is_finished = result_queue.get()
 
-            if not self.quiet:
-                print("[CLIENT] Transfer complete")
+            print("[CLIENT] Transfer complete")
         except KeyboardInterrupt:
             print("\nClient interruption. Closing connection gracefully\n")
         finally:

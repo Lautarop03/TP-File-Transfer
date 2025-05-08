@@ -17,8 +17,8 @@ def run(operation):
                 print(f"Error: {operation.error}")
             return 1
 
-        if not operation.quiet:
-            print("\n[CLIENT] Starting transfer")
+        print("\n[CLIENT] Successful connection with server. "
+              "Starting transfer")
 
         operation.transfer(is_client=True)
         operation.terminate()
