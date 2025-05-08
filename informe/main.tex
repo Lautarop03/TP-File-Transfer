@@ -59,7 +59,7 @@ Se define con la siguiente estructura:
     \begin{itemize}
         \item \textbf{Flags} (1 Byte):
         \begin{itemize}
-        \item \textbf{PADDING} (6 bits)
+        \item \textbf{PADDING} (5 bits)
         \item \textbf{ACK} (1 bit)
         \item \textbf{OPCODE:} Indica el tipo de operacion a realizar durante la conexión (UPLOAD o DOWNLOAD) (1 bit)
         \item \textbf{PROTOCOL:} Indica el tipo de protocolo a utilizar durante la conexión (SW o SR) (1 bit)
@@ -74,8 +74,12 @@ Se define con la siguiente estructura:
     \end{itemize}
     
     \item \textbf{Checksum CRC32} (4 Bytes)
-
 \end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{init_segment.png}
+    \caption{Estructura paquete INIT}
+\end{figure}
 
 \subsubsection{S\&W}
 El segmento \textbf{StopAndWaitSegment} (S\&W) se utiliza para la \textbf{transferencia de datos y el control} en el protocolo RDT \textbf{Stop \& Wait}. Se define con la siguiente estructura:
@@ -95,6 +99,12 @@ El segmento \textbf{StopAndWaitSegment} (S\&W) se utiliza para la \textbf{transf
     \item \textbf{Checksum CRC32} (4 Bytes)
 \end{itemize}
 El tamaño mínimo total de un segmento S\&W serializado (sin payload) es de 1 (header) + 2 (len payload) + 0 (payload) + 4 (CRC) = 7 bytes.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{sw_segment.png}
+    \caption{Estructura paquete STOP AND WAIT}
+\end{figure}
+
 
 \subsubsection{SR}
 El segmento \textbf{SelectiveRepeatSegment} (SR) se destina a la \textbf{transferencia de datos y el control} en el protocolo RDT \textbf{Selective Repeat}. Se define con la siguiente estructura:
@@ -111,18 +121,64 @@ El segmento \textbf{SelectiveRepeatSegment} (SR) se destina a la \textbf{transfe
     \item \textbf{Checksum CRC32} (4 Bytes)
 \end{itemize}
 El tamaño mínimo total de un segmento SR serializado (sin payload) es de 2 (seq) + 2 (ack) + 2 (win) + 2 (len payload) + 0 (payload) + 4 (CRC) = 12 bytes.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{sr_segment.png}
+    \caption{Estructura paquete SELECTIVE REPEAT}
+\end{figure}
 
-\subsection{Handshake?}
-?
+
+\subsection{Handshake}
+Siguiendo con la idea de formar un RDT, es necesario que el protocolo de aplicación construido permita a las partes establecer una conexión de manera que ambos sepan que del otro lado hay una parte que recibirá sus mensajes y estará también compartiendo la información. Siguiendo con el punto anterior, el mensaje INIT y su respectiva respuesta INITACK (INIT con el flag de ACK setteado en 1) son los usados para establecer dicha conexión inicial.
+Como la conexiòn, propio de la aquitectura cliente-servidor, es iniciada por el primero, encargado de enviar el INIT y luego recibir el INITACK. 
+En la estructura del mensaje INIT se observa, que el objetivo es que el cliente conozca el protocolo, rol y otra metadata respecto a los archivos que el cliente pretende asumir. 
+Implementamos entonces un 2-way handshake, que nos pareciò apropiado para este trabajo, haciendo así que desde el punto de vista del servidor la conexión está establecida a partir de la recepción del INIT, y para el cliente se considera establecida a partir de la recepción del INITACK.
 
 \subsection{Stop \& Wait}
-Explicar funcionamiento, arquitectura.
+El protocolo Stop \& Wait, a partir de ahora SW se basa en la idea de valga la redundancia, esperar paquete a paquete recibir el ACK del mismo. Vale la aclaración que \textbf{en este trabajo decidimos implementar SW sin NAK, sino basado en timeouts por paquete enviado}.
+Observando la estructura que definimos para el paquete SW es importante notar que el número de secuencia del paquete enviado va a ser sólo 0 o 1, y paquete a paquete el valor se va a ir alternando y se debe recibir el ACK de ese paquete para continuar con el próximo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{sw_flow.png}
+    \caption{Flujo básico SW con pérdida}
+\end{figure}
+
+Algunas decisiones de implementación tomadas que vale la pena aclarar:
+\begin{itemize}
+    \item \textbf{El número de ACK devuelto es el mismo al del paquete recibido}, no el siguiente como en otras implementaciones. Simplemente lo implementamos así desde el principio y no encontramos motivos para no mantenerlo de esta forma.
+    \item \textbf{Basado en timeouts en vez de NAK}. Si bien conocemos que haciendo uso de NAK es probable observar una mejora en el tiempo total de transferencia más sobre un enlace con pérdida y retransmisiones, decidimos no tomar esta idea y simplemente mantener los timeouts. El motivo es porque consideramos más útil centrar nuestros esfuerzos en otros aspectos del trabajo y sabíamos que usando timeouts para el emisor de los paquetes ya manejamos tanto el caso base de uso de timeouts por pérdida de paquetes como la necesidad de retransmisión en caso de que el paquete esperado por el receptor no sea el enviado, probablemente mismo causado por la pérdida.
+\end{itemize}
 
 \subsection{Selective Repeat}
 Explicar funcionamiento, arquitectura.
 
 \subsection{Servidor}
-Explicar funcionamiento, arquitectura.
+En la solución implementada, la responsabilidad del servidor en sí es enfocada a la recepción de mensajes y manejo de clientes, en la siguiente \autoref{fig:server-a-rol} se puede observar un flujo común de comunicación entre un cliente y servidor
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{client_server_exchange.png}
+    \caption{Modelo de flujo de recepción de mensaje del servidor hacia procesamiento del mismo}
+    \label{fig:server-a-rol}
+\end{figure}
+
+\textit{En la próxima sección documentaremos las entidades intermedias agregadas al diagrama de secuencia.}
+El servidor entonces se encarga del manejo del socket con el que todos los clientes se comunican. A partir de la recepción de un mensaje, el flujo puede continuar:
+\begin{enumerate}
+        \item Si es el primer mensaje de un cliente, se procede a continuar el handshake, que consiste en enviar el INITACK y del punto de vista del servidor se considera la conexión establecida. Se agrega la conexión a la colección de conocidas y en caso de "download" por parte del cliente manda el/los paquetes necesarios a modo kickstart.
+        \item Si el mensaje procede de una dirección de cliente conocida, se le pasa la información al proceso encargado de reaccionar a este y el flujo continua.
+        \item Un caso particular, es la recepción de mensaje FIN por parte de un cliente, en este caso se cierra la conexión y liberan los recursos asociados al proceso con el cliente.
+\end{enumerate}
+Relacionado a la implementación, el hilo principal lee la información del socket y lanza un hilo por cada mensaje recibido para que pueda resolverse qué hacer con ese mensaje. Para el caso más interesante, que es el de transferencia de datos en si, le comunicamos al handler (explicado en la próxima sección) la información recibida mediante una Queue. Y haciendo, en caso que haya estado esperando, que se desbloquee su ejecución.
+
+\subsection{Arquitectura enfocada en roles}
+Como se pudo notar, por lo pronto no entramos en detalle con respecto a la implementación o arquitectura de la solución en ninguno de los sub-puntos. Esto se debe a que decidimos encarar la solución a partir de los roles que cada entidad asume, nosotros los llamamos Uploader y Downloader pero son análogos a Emisor y Receptor.
+Como se comentó brevemente en la sección de Servidor, la responsabilidad propia del envío o recepción de mensajes se delega en el rol de la entidad en el traspaso de archivo. De esta forma, la responsabilidad de las entidades Cliente o Servidor se limitan a la iniciación y finalización de la comunicación y traspaso de información recibida del socket a la implementación del rol que asumen con la información comunicada en el mensaje INIT.
+
+\subsection{Data \& Protocol Workers}
+Para que la solución sea más performante decidimos "separar" la escritura y lectura de archivos del manejo de paquetes o procesos relacionados al protocolo. Para esto, las operaciones relacionadas a los archivos son "background", más específicamente es concurrente. Por ejemplo: en el caso de Uploader, un hilo está constantemente leyendo chunks de información del archivo a enviar a la otra entidad (de tamaño definido por el packet size a enviar) y carga esta información en una estructura de cola; a este proceso lo nombramos "data\_worker". Luego, el "protocol\_worker", es decir, el algoritmo encargado de efectivamente enviar esa información, toma la información de la cola, la paquetiza y envía según el protocolo utilizado.
+De esta manera, reducimos el tiempo que toma enviar un mensaje realizando el proceso de forma secuencial y aprovechamos los "tiempos muertos" propios de la transmisión de información por una red (tenga o no packet loss). Además aseguramos la sincronización entre los procesos debido a la naturaleza bloqueante del Queue.Get() de Python. 
 
 \section{Pruebas}
 Se realizaron pruebas para comparar el rendimiento de los protocolos Stop \& Wait y Selective Repeat bajo distintas condiciones de pérdida de paquetes. Las pruebas incluyeron la transferencia de un archivo de 5.2MB simulando varios porcentajes de pérdida de paquetes (0\%, 10\%, y 20\%) utilizando Mininet para emular las condiciones de la red. Para verificar la integridad de los archivos transferidos, se realizo diff entre ambos archivos verificando que sean iguales. También se verificó en WireShark el tráfico generado, confirmando que los mensajes del protocolo seguían el formato definido.
