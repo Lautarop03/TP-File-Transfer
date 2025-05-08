@@ -107,8 +107,8 @@ class SelectiveRepeat:
                 self.handle_ack(segment)
             else:
                 if self.verbose:
-                    print("[SelectiveRepeat] put_bytes: Encolando DATA "
-                          f"de {len(segment.payload)} bytes")
+                    print(f"[SelectiveRepeat] Putting {len(segment.payload)} "
+                          "bytes into communication queue")
                 self.communication_queue.put(data)
         except Exception as e:
             if self.verbose:

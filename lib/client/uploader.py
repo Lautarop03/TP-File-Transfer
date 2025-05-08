@@ -9,9 +9,7 @@ import threading
 
 from lib.utils.static import (
     get_protocol_from_args,
-    # get_transfer_config_from_args,
     get_protocol_code_from_protocol_str)
-# , UPLOAD_OPERATION
 
 
 class Uploader():
@@ -21,7 +19,7 @@ class Uploader():
             print(f"ERROR: Source file not found: {args.src}")
             raise FileNotFoundError
         if args.verbose:
-            print(f"File {args.src} found for upload")
+            print(f"[Uploader] File {args.src} found for upload")
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.destination_address = (args.host, args.port)
@@ -44,7 +42,9 @@ class Uploader():
 
     def data_worker(self):
         """Worker thread that reads data from file"""
-        print(f"Data worker start, reading from: {self.file_manager.path}")
+        if self.verbose:
+            print("[Uploader] Data worker start, "
+                  f"reading from: {self.file_manager.path}")
         try:
             data_size = BUFFER_SIZE - self.protocol_handler.header_size
             while True:
@@ -61,12 +61,11 @@ class Uploader():
             self.error = error_msg
             # Send error as bytes through the queue
             self.data_queue.put(error_msg.encode())
-        # finally:
-        #     if self.file_manager:
-        #         self.file_manager.close()
 
     def protocol_worker(self, result_queue):
         """Worker thread that handles protocol and sends data"""
+        if self.verbose:
+            print("[Uploader] Protocol worker start")
         try:
 
             data = self.data_queue.get()
@@ -79,7 +78,7 @@ class Uploader():
                     self.protocol_handler.send(
                         b"", eof=1)
                     if self.verbose:
-                        print("Upload complete")
+                        print("[Uploader] Upload complete")
                     result_queue.put(True)
                 else:
                     self.protocol_handler.send(
@@ -102,39 +101,35 @@ class Uploader():
         if is_client:
             self.transfer_all_here(result_queue)
         else:
-
             self.start_workers(result_queue)
             result = result_queue.get()
-            # print(f"Result: {result}")
             return result
 
     def transfer_all_here(self, result_queue):
-        print("Transfer all here")
         is_finished = False
-        iter = 0
+        self.socket.settimeout(5)  # timeout for server response
 
         while not is_finished:
-            iter += 1
-            print(f"Iteration {iter}")
             self.start_workers(result_queue)
             try:
                 # Receive data
-                # Al socket le quedo el time out que se uso en init
-                # self.socket.settimeout(None)  # Reset timeuot
-                print("Waiting for message")
+                print("[CLIENT] Waiting for server response...")
                 data, _ = self.socket.recvfrom(BUFFER_SIZE)
+                print("[CLIENT] Proccesing response")
                 self.protocol_handler.put_bytes(data)
-                print(f"Received data: {data}")
             except socket.timeout:
                 if not self.quiet:
-                    print("TIMEOUT while waiting for message on uploader...")
+                    print("[CLIENT] TIMEOUT while waiting for "
+                          "message on uploader...")
                 continue
             is_finished = result_queue.get()
 
-        print("Transfer all here finished")
+        if not self.quiet:
+            print("[CLIENT] Transfer complete")
         self.file_manager.close()
         self.socket.sendto(b"FIN", self.destination_address)
-        print("Sent FIN")
+        if self.verbose:
+            print("[CLIENT] Sending FIN to server")
         self.socket.close()
 
     def start_workers(self, result_queue):

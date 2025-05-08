@@ -1,7 +1,6 @@
 from lib.protocols.stop_and_wait import StopAndWait
 from lib.protocols.selective_repeat import SelectiveRepeat
 from lib.utils.constants import SELECTIVE_REPEAT, STOP_AND_WAIT
-from lib.utils.transfer_config import TransferConfig
 
 
 def get_protocol_code_from_protocol_str(protocol_str):
@@ -25,14 +24,3 @@ def get_protocol_from_args(args, socket, destination_address):
             args.verbose,
             args.quiet
         )
-
-
-def get_transfer_config_from_args(args, file_name, file_path):
-    server_address = (args.host, args.port)
-    return TransferConfig(
-        server_address=server_address,
-        file_name=file_name,
-        file_path=file_path,
-        verbose=args.verbose,
-        quiet=args.quiet
-    )
