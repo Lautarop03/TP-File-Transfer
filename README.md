@@ -1,31 +1,83 @@
 # TP File Transfer
 
-## Dev config on VSCode
+Repositorio para el TP1 de Redes del Grupo 10
 
-**Install Flake8 (linter) and autopep 8 (formatter that follows PEP8 standard).** 
-    Then, settings file should override format on save and added code should be compliant. 
-    NOTE: Seems like formatter doesn't handle "too long" lines so the line jump should be added manually
+## Server
 
+Para iniciar el servidor:
 
-Local:
+```sh
+~$ python start-server.py -h
+usage: start-server [-h] [-v | -q] [-H ADDR] [-p PORT] [-s DIRPATH] [-r protocol]
 
-python3 start-server.py -v -H 127.0.0.1 -p 1234 -s ./files/server -r sw
+Start the UDP file transfer server, will listen on ADDR:PORT
 
-python3 upload.py -v -H 127.0.0.1 -p 1234 -s ./files/client/clientfile.txt -n uploadfile.txt -r sw
+options:
+  -h, --help        show this help message and exit
+  -v, --verbose     increase output verbosity
+  -q, --quiet       decrease output verbosity
+  -H , --host       service IP address
+  -p , --port       service port
+  -s , --storage    storage dir path
+  -r , --protocol   error recovery protocol
+```
 
-python3 download.py -v -H 127.0.0.1 -p 1234 -d ./files/client/downloadfile.txt -n serverfile.txt -r sw
+### Ejemplo
 
+```sh
+python3 start-server.py -H 127.0.0.1 -p 1234 -s ./files/server -r sw
+```
 
-Mininet:
+## Client - Upload
 
-sudo -E mn --topo single,3
+Para subir un archivo al servidor:
 
-Agrega pkt loss
-h1 tc qdisc add dev h1-eth0 root netem loss 5%
-h2 tc qdisc add dev h2-eth0 root netem loss 5%
+```sh
+~$ python3 upload.py -h
+usage: upload [-h] [-v | -q] [-H ADDR] [-p PORT] [-s FILEPATH] [-n FILENAME] [-r protocol]
 
-python3 start-server.py -v -H 10.0.0.1 -p 1234 -s ./files/server -r sw
+Upload the file located in FILEPATH to the server running on ADDR:PORT, will be saved as FILENAME
 
-h2 python3 upload.py -v -H 10.0.0.1 -p 1234 -s ./files/client/clientfile.txt -n uploadfile.txt -r sw
+options:
+  -h, --help        show this help message and exit
+  -v, --verbose     increase output verbosity
+  -q, --quiet       decrease output verbosity
+  -H , --host       server IP address
+  -p , --port       server port
+  -n , --name       file name
+  -s , --src        source file path
+  -r , --protocol   error recovery protocol
+```
 
-h2 python3 download.py -v -H 10.0.0.1 -p 1234 -d ./files/client/downloadfile.txt -n serverfile.txt -r sw
+### Ejemplo
+
+```sh
+python3 upload.py -H 127.0.0.1 -p 1234 -s ./files/client/5.png -n upload5.png -r sw
+```
+
+## Client - Download
+
+Para descargar un archivo del servidor:
+
+```sh
+~$ python3 download.py -h
+usage: download [-h] [-v | -q] [-H ADDR] [-p PORT] [-d FILEPATH] [-n FILENAME] [-r protocol]
+
+Download a file named FILENAME on the server running in ADDR:PORT and save it on FILEPATH
+
+options:
+  -h, --help        show this help message and exit
+  -v, --verbose     increase output verbosity
+  -q, --quiet       decrease output verbosity
+  -H , --host       server IP address
+  -p , --port       server port
+  -n , --name       file name
+  -d , --dst        destination file path
+  -r , --protocol   error recovery protocol
+```
+
+### Ejemplo
+
+```sh
+python3 download.py -v -H 127.0.0.1 -p 1234 -d ./files/client/dlorem5.txt -n lorem5.txt -r sw
+```

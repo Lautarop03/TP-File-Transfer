@@ -41,8 +41,8 @@ def main():
         prog="download",
         usage="download [-h] [-v | -q] [-H ADDR] [-p PORT] [-d FILEPATH]"
         " [-n FILENAME] [-r protocol]",
-        description="Download a file placed in FILEPATH on the server running"
-        " in ADDR:PORT and save it as FILENAME",
+        description="Download a file named FILENAME on the server running"
+        " in ADDR:PORT and save it on FILEPATH",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     add_arguments(parser)
