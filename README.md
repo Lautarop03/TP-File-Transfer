@@ -57,6 +57,8 @@ python3 upload.py -H 127.0.0.1 -p 1234 -s ./files/client/5.png -n upload5.png -r
 
 ## Client - Download
 
+Aclaración: Asumimos que ```FILENAME``` es el nombre del archivo a buscar en el servidor y que ```FILEPATH``` es el path local del cliente donde se va a guardar el archivo a descargar del servidor, por ello esta varible o path debe terminar con el nombre con que se guardara el archivo.
+
 Para descargar un archivo del servidor:
 
 ```sh
