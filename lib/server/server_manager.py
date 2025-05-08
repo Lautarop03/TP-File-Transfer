@@ -36,10 +36,6 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                     del client_connections[client_address]
             return
 
-        # print("previous to client_connections lock")
-        # Check if this is a new client (INIT message)
-
-            # print("inside client_connections lock")
         if client_address not in client_connections:
             with client_connections_lock:
                 init_segment = InitSegment.deserialize(data, args.verbose)
@@ -48,7 +44,7 @@ def process_message(data: bytes, client_address: Tuple[str, int],
                 if args.verbose:
                     print("Successfully deserialized init segment")
 
-                connectionInfo = ConnectionInfo(init_segment, server_socket,
+                connectionInfo = ConnectionInfo(init_segment,
                                                 client_address, args)
                 connectionInfo.lock = threading.Lock()
                 client_connections[client_address] = connectionInfo
