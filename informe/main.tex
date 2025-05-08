@@ -125,7 +125,36 @@ Explicar funcionamiento, arquitectura.
 Explicar funcionamiento, arquitectura.
 
 \section{Pruebas}
-Presentar las pruebas realizadas: capturas de ejecución del cliente, logs del servidor y resultados obtenidos. Imágenes de wireshark etc.
+Se realizaron pruebas para comparar el rendimiento de los protocolos Stop \& Wait y Selective Repeat bajo distintas condiciones de pérdida de paquetes. Las pruebas incluyeron la transferencia de un archivo de 5.2MB simulando varios porcentajes de pérdida de paquetes (0\%, 10\%, y 20\%) utilizando Mininet para emular las condiciones de la red. Para verificar la integridad de los archivos transferidos, se realizo diff entre ambos archivos verificando que sean iguales. También se verificó en WireShark el tráfico generado, confirmando que los mensajes del protocolo seguían el formato definido.
+
+\subsection*{Resultados}
+
+\begin{itemize}
+    \item Tiempos de transferencia para un archivo de 5.2MB con diferentes porcentajes de pérdida:
+    \begin{itemize}
+        \item \textbf{0\% Pérdida}:
+        \begin{itemize}
+            \item Selective Repeat (Upload): 2.39 segundos
+            \item Selective Repeat (Download): 1.43 segundos
+            \item Stop \& Wait (Upload): 4.91 segundos
+            \item Stop \& Wait (Download): 4.12 segundos
+        \end{itemize}
+        \item \textbf{10\% Pérdida}:
+        \begin{itemize}
+            \item Selective Repeat (Upload): 91.16 segundos
+            \item Selective Repeat (Download): 94.72 segundos
+            \item Stop \& Wait (Upload): 85.67 segundos
+            \item Stop \& Wait (Download): 82.33 segundos
+        \end{itemize}
+        \item \textbf{20\% Pérdida}:
+        \begin{itemize}
+            \item Selective Repeat (Upload): 213.62 segundos
+            \item Selective Repeat (Download): 185.18 segundos
+            \item Stop \& Wait (Upload): 200.48 segundos
+            \item Stop \& Wait (Download): 200.97 segundos
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
 
 \section{Preguntas a responder}
 \subsection{Describa la arquitectura Cliente-Servidor}
@@ -182,10 +211,21 @@ Se explica en la sección de Implementación.
 
 
 \section{Dificultades encontradas}
-?
+Las dificultades encontradas durante el proyecto incluyeron la definición de estructuras de mensajes, el manejo efectivo de timeouts, la lógica para la recuperación de pérdida de paquetes y la gestión de la ejecución concurrente en el servidor. El uso de concurrencia fue útil para manejar múltiples clientes, pero requiere un análisis cuidadoso para evitar posibles vulnerabilidades como el agotamiento de recursos.
 
 \section{Conclusión}
-?
 
+La conclusión principal que obtenemos de este trabajo práctico es que efectivamente se logró crear un protocolo de transferencia de datos confiable (RDT) sobre UDP, un protocolo que por sí solo no ofrece garantías de fiabilidad. Esto se realizó mediante el desarrollo de una aplicación cliente-servidor orientada a la transferencia de archivos. Se implementaron dos mecanismos RDT sobre UDP: \textbf{Stop \& Wait} y \textbf{Selective Repeat }.
+
+\begin{itemize}
+    \item \textbf{Stop \& Wait (SW)} resultó ser más simple de implementar. Su lógica es directa, lo cual facilita su desarrollo y depuración. Es útil en redes con baja pérdida, aunque menos eficiente en términos de uso del canal.
+    
+    \item \textbf{Selective Repeat (SR)} tiene una implementación más compleja, dado que maneja ventanas deslizantes y múltiples paquetes en tránsito.
+
+\end{itemize}
+
+En las pruebas realizadas, ambos protocolos lograron cumplir su propósito fundamental: garantizar la llegada de los datos de forma confiable entre host y host, incluso en presencia de pérdidas de paquetes simuladas. Esto demuestra que, mediante un diseño adecuado en la capa de aplicación, es posible construir comunicación confiable sobre una base no confiable como UDP.
+
+En definitiva, los protocolos desarrollados cumplieron con su objetivo: ofrecer un mecanismo robusto de transferencia de archivos, resaltando la importancia del protocolo de la capa de aplicación en garantizar la fiabilidad cuando la capa de transporte no lo hace.
 
 \end{document}
