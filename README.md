@@ -83,3 +83,62 @@ options:
 ```sh
 python3 download.py -v -H 127.0.0.1 -p 1234 -d ./files/client/dlorem5.txt -n lorem5.txt -r sw
 ```
+
+## Mininet - Topología con pérdida de paquetes
+
+Pre: Instalar mininet y xterm por terminal
+
+Iniciar la topoligía con una cantidad de hosts y una tasa de pérdida de paquetes (El ```server``` se crea por default):
+
+```sh
+usage: topo_mn.py [-h] [-nh N_HOSTS] [-lr LOSS_RATE]
+
+sudo python3 topo_mn.py -nh 2 -lr 5
+```
+
+### Ejemplo de uso:
+
+1) Iniciar topoligía con mininet
+    ```sh
+    sudo python3 topo_mn.py -nh 2 -lr 5
+    ```
+
+2) Iniciar el servidor en la terminal ```host:server```:
+    ```sh
+    python3 start-server.py -H 10.0.0.1 -p 1234 -s ./files/server -r sw
+    ```
+
+3) Iniciar los clientes en la terminal ```host:h0``` y ```host:h1``` en simultaneo
+
+    En ```host:h0```:
+    ```sh
+    python3 upload.py -H 10.0.0.1 -p 1234 -s ./files/client/5.png -n upload5.png -r sw
+    ```
+
+    En ```host:h1```:
+
+    ```sh
+    python3 download.py -H 10.0.0.1 -p 1234 -d ./files/client/dlorem5.txt -n lorem5.txt -r sw
+    ```
+
+4) (Opcional) Verificar si dos archivos son idénticos en contenido mediante su hash
+    
+    Por consola ejecutar lo siguiente, imprime ```Iguales``` o ```Distintos``` segun corresponda
+
+    - Para comparar el archivo subido:
+      ```sh
+      if [ "$(sha256sum files/client/5.png | awk '{print $1}')" = "$(sha256sum upload5.png | awk '{print $1}')" ]; then
+        echo "Iguales"
+      else
+        echo "Distintos"
+      fi
+      ```
+    
+    - Para comparar el archivo descargado:
+      ```sh
+      if [ "$(sha256sum files/server/loremt.txt | awk '{print $1}')" = "$(sha256sum dlorem5.txt | awk '{print $1}')" ]; then
+        echo "Iguales"
+      else
+        echo "Distintos"
+      fi
+      ```
